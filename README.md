@@ -1,0 +1,1 @@
+# local_object_recognizer
