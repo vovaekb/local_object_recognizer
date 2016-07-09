@@ -1,0 +1,9 @@
+include/local_object_recognizer/common.h
+include/local_object_recognizer/console_parse.h
+include/local_object_recognizer/feature_cloud.h
+include/local_object_recognizer/persistence_utils.h
+include/local_object_recognizer/recognizer.h
+src/main.cpp
+src/recognizer.cpp
+src/view_preprocess.cpp
+src/view_renderer.cpp
