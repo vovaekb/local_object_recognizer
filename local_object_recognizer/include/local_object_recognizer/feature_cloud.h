@@ -34,7 +34,7 @@ public:
     // Load and process point cloud in the given PCD
     void loadInputCloud(const string &pcd_file, const string &cloud_type);
 
-    void setPose(const Eigen::Matrix4f & pose);
+    void setPose(const Eigen::Matrix4f && pose);
 
     void setModelId(const string &model_id);
 

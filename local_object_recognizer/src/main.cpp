@@ -335,7 +335,7 @@ void getModelsFromDir(boost::filesystem::path &dir)
                 FeatureCloud view_cloud;
                 view_cloud.setViewId(view_id);
                 view_cloud.setModelId(model_id);
-                view_cloud.setPose(pose);
+                view_cloud.setPose(std::move(pose));
                 view_cloud.loadInputCloud(pcd_path.c_str(), "model");
                 recognizer.addTemplateCloud(view_cloud);
             }

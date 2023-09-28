@@ -103,7 +103,7 @@ vector<string> Recognizer::getTrainingModelNames()
 
 void Recognizer::addTemplateCloud(FeatureCloud &template_cloud)
 {
-    object_templates.push_back(template_cloud);
+    object_templates.emplace(object_templates.end(), template_cloud);
 }
 
 void Recognizer::addModelId(const string &model_name)
@@ -266,7 +266,7 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
         Eigen::Matrix4f best_trans;
         pcl::registration::TransformationEstimationSVD <PointType, PointType> t_est;
         t_est.estimateRigidTransformation(*template_keypoints, *(target_.getKeypoints()), corresp_clusters[i], best_trans);
-        transformations.push_back(best_trans);
+        transformations.emplace(transformations.end(), std::move(best_trans));
     }
 
     cout << "Clusters survived after the cardinality rejection: " << transformations.size() << "\n\n\n";
@@ -277,7 +277,7 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
         ObjectHypothesis oh;
         oh.model_template = model_template;
         oh.transformation = transformations[j];
-        object_hypotheses_.push_back(oh);
+        object_hypotheses_.emplace(object_hypotheses_.end(), oh);
     }
 
 }
