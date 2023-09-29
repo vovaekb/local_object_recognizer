@@ -56,15 +56,6 @@ public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
-    // functor for sorting by ICP score
-    struct sortIndexScores
-    {
-      bool
-      operator() (const ObjectHypothesis& d1, const ObjectHypothesis& d2)
-      {
-        return d1.icp_score < d2.icp_score;
-      }
-    } sortIndexScoresOp;
 
     typedef pcl::PointXYZRGB PointType;
     typedef pcl::Normal NormalType;

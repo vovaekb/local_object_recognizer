@@ -413,7 +413,11 @@ void Recognizer::recognize()
     cout << "-------------------\n";
 
     // Order found hypotheses by ICP score
-    sort(templates_temp.begin(), templates_temp.end(), sortIndexScoresOp);
+    sort(templates_tmp.begin(), templates_tmp.end(), 
+        [](const ObjectHypothesis& d1, const ObjectHypothesis& d2)
+        { 
+            return d1.icp_score < d2.icp_score 
+        });
 
     // For every model find the best hypothesis
     object_hypotheses_.clear();
