@@ -174,7 +174,7 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
     std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > transformations;
 
     PointCloudTypePtr template_keypoints = model_template.getKeypoints();
-    pcl::PointCloud<NormalType>::Ptr template_normals = model_template.getSurfaceNormals();
+    NormalCloudType template_normals = model_template.getSurfaceNormals();
     PointCloudTypePtr template_cloud = model_template.getPointCloud();
 
     // Geometric consistency

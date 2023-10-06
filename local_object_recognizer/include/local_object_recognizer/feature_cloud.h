@@ -12,11 +12,15 @@
 
 using namespace std;
 
+
 typedef pcl::PointXYZRGB PointType;
 typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
 typedef pcl::PointCloud<PointType>::ConstPtr PointCloudTypeConstPtr;
 typedef pcl::Normal NormalType;
+typedef pcl::PointCloud<NormalType>::Ptr NormalCloudType;
 typedef pcl::SHOT352 SHOTDescriptorType;
+typedef pcl::PointCloud<SHOTDescriptorType>::Ptr SHOTDescriptorCloudType;
+
 
 double computeCloudResolution(const PointCloudTypeConstPtr& cloud);
 
@@ -42,11 +46,11 @@ public:
 
     PointCloudTypePtr getPointCloud () const;
 
-    pcl::PointCloud<NormalType>::Ptr getSurfaceNormals () const;
+    NormalCloudType getSurfaceNormals () const;
 
     PointCloudTypePtr getKeypoints () const;
 
-    pcl::PointCloud<SHOTDescriptorType>::Ptr getLocalFeatures () const;
+    SHOTDescriptorCloudType getLocalFeatures () const;
 
     Eigen::Matrix4f getPose() const;
 
@@ -66,9 +70,9 @@ protected:
 private:
     // Point cloud data
     PointCloudTypePtr xyz_;
-    pcl::PointCloud<NormalType>::Ptr normals_;
+    NormalCloudType normals_;
     PointCloudTypePtr keypoints_;
-    pcl::PointCloud<SHOTDescriptorType>::Ptr features_;
+    SHOTDescriptorCloudType features_;
     Eigen::Matrix4f pose_;
 
     string cloud_type_;
