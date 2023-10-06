@@ -77,6 +77,7 @@ const float hv_regularizer (3.f);
 //vector<string> templates_names;
 Recognizer recognizer;
 
+
 void runRecognizer()
 {
     // Load scene cloud
@@ -99,7 +100,7 @@ void runRecognizer()
     recognizer.recognize();
 
 
-    vector<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis> > models = recognizer.getModels();
+    std::list<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis> > models = recognizer.getModels();
 
     // Visualize the found templates
     if(models.size())
@@ -114,9 +115,8 @@ void runRecognizer()
             exit(-1);
         }
 
-        for(int i = 0; i < models.size(); i++)
+        for (auto && model : models)
         {
-            Recognizer::ObjectHypothesis model = models[i];
             string model_id = model.model_template.getModelId();
 
             cout << "Model " << model_id;
@@ -218,9 +218,8 @@ void runRecognizer()
             bool is_present = PersistenceUtils::modelPresents(gt_file_path, model_name);
             bool is_found = false;
 
-            for(int i = 0; i < models.size(); i++)
+            for (auto && model : models)
             {
-                Recognizer::ObjectHypothesis model = models[i];
                 if(model.model_template.getModelId() == model_name) is_found = true;
             }
 
@@ -259,9 +258,8 @@ void runRecognizer()
             viewer.addCoordinateSystem(1.0);
 
 
-            for(int i = 0; i < models.size(); i++)
+            for (auto && model : models)
             {
-                Recognizer::ObjectHypothesis model = models[i];
                 PointCloudTypePtr model_cloud = model.model_template.getPointCloud();
                 Eigen::Matrix4f transform = model.transformation; // 6DoF pose
 
@@ -290,7 +288,7 @@ void getModelsFromDir(boost::filesystem::path &dir)
 //    cout << "[getModelsFromDir]\n";
 //    cout << "Reading dir: " << dir.string() << "\n";
 
-    string model_id;
+    std::string model_id;
     if(dir != models_dir)
     {
         model_id = (dir.filename()).string();

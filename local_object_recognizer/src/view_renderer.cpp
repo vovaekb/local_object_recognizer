@@ -76,32 +76,34 @@ main(int argc, char** argv)
     render_views.getPoses(poses);
     render_views.getEntropies(entropies);
 
-    for(size_t j = 0; j < poses.size(); j++) //
+    size_t j = 0;
+    for (auto && pose : poses)
     {
         cout << "Instance " << (j + 1) << ":\n";
 
         stringstream pose_ss;
         pose_ss << samples_dir << "/pose_" << j << ".txt";
 
-        PersistenceUtils::writeMatrixToFile(pose_ss.str(), poses[j]);
+        PersistenceUtils::writeMatrixToFile(pose_ss.str(), pose);
 
-        Eigen::Matrix3f rotation = poses[j].block<3, 3>(0, 0);
-        Eigen::Vector3f translation = poses[j].block<3, 1>(0, 3);
+        Eigen::Matrix3f rotation = pose.block<3, 3>(0, 0);
+        Eigen::Vector3f translation = pose.block<3, 1>(0, 3);
         printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(0, 0), rotation(0, 1), rotation(0, 2));
         printf("\t\tR = | %6.3f %6.3f %6.3f | \n", rotation(1, 0), rotation(1, 1), rotation(1, 2));
         printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(2, 0), rotation(2, 1), rotation(2, 2));
         cout << "\n";
         printf("\t\tt = < %0.3f, %0.3f, %0.3f >\n", translation(0), translation(1), translation(2));
+        j++;
     }
 
-    for(size_t i = 0; i < poses.size(); i++)
+    for (auto && view : views)
     {
-        cout << "Cloud " << i << " has " << views[i]->points.size() << " points\n";
+        cout << "Cloud " << i << " has " << view->points.size() << " points\n";
         stringstream ss_cloud;
         ss_cloud << samples_dir << "/" << i << ".pcd";
         cout << ss_cloud.str() << "\n";
         PointCloudTypePtr cloud_sample (new pcl::PointCloud<PointType> ());
-        *cloud_sample = *views[i];
+        *cloud_sample = *view;
         pcl::io::savePCDFileASCII(ss_cloud.str(), *cloud_sample);
 
         cout << ss_cloud.str() << " was saved\n";

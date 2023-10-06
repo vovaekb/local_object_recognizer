@@ -1,5 +1,6 @@
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 
+#include <list>
 #include <ros/ros.h>
 
 // Boost
@@ -91,7 +92,7 @@ void Recognizer::setHVInlierThresh(const float &hv_thresh)
     hv_inlier_th_ = hv_thresh;
 }
 
-vector<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis> > Recognizer::getModels()
+std::list<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis> > Recognizer::getModels()
 {
     return object_hypotheses_;
 }
@@ -130,10 +131,11 @@ void Recognizer::match()
 
     template_scene_correspondences_.clear();
 
-    for(size_t i = 0; i < object_templates.size(); i++)
+    int i = 0;
+    for (auto && obj_template : object_templates)
     {
         cout << "\n\nMatching for model template " << i << "\n";
-        shot_matching.setInputCloud(object_templates[i].getLocalFeatures());
+        shot_matching.setInputCloud(obj_template.getLocalFeatures());
         // A Correspondence object stores the indices of the query and the match,
         // and the distance/weight.
         pcl::CorrespondencesPtr correspondences (new pcl::Correspondences());
@@ -164,6 +166,7 @@ void Recognizer::match()
         cout << "[Recognizer::match] Found " << correspondences->size() << " correspondences\n";
 
         template_scene_correspondences_.push_back(correspondences);
+        i++;
     }
 }
 
@@ -171,7 +174,7 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
 {
     vector<pcl::Correspondences> corresp_clusters;
 
-    std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > transformations;
+    std::list<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > transformations;
 
     PointCloudTypePtr template_keypoints = model_template.getKeypoints();
     NormalCloudType template_normals = model_template.getSurfaceNormals();
@@ -235,7 +238,8 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
     cout << "Clusters for model " << index << " found: " << corresp_clusters.size() << "\n";
 
     // Correspondence cardinality based rejection step
-    std::vector<bool> good_indices_for_hypotheses (corresp_clusters.size(), true);
+    std::list<bool> good_indices_for_hypotheses (corresp_clusters.size(), true);
+
 
     // sort the hypotheses for each model according to their correspondences and take those that are threshold_accept_model_hypothesis_ over the max cardinality
     int max_cardinality = -1;
@@ -272,11 +276,11 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
     cout << "Clusters survived after the cardinality rejection: " << transformations.size() << "\n\n\n";
 
 
-    for(size_t j = 0; j < transformations.size(); j++)
+    for (auto && transformation : transformations)
     {
         ObjectHypothesis oh;
         oh.model_template = model_template;
-        oh.transformation = transformations[j];
+        oh.transformation = transformation;
         object_hypotheses_.emplace(object_hypotheses_.end(), oh);
     }
 
@@ -286,11 +290,13 @@ void Recognizer::group_correspondences()
 {
     cout << "\n---------------- Correspondences grouping --------------------\n";
 
-    for(size_t i = 0; i < object_templates.size(); i++)
+    int i = 0;
+    for (auto && obj_template : object_templates)
     {
         cout << "CG algorithm for object template: " << i << "\n";
 
-        group_template_correspondences(object_templates[i], i);
+        group_template_correspondences(obj_template, i);
+        i++;
     }
 }
 
@@ -301,10 +307,8 @@ void Recognizer::alignAll()
 
     cout << "Number of hypotheses: " << object_hypotheses_.size() << "\n";
 
-    for(size_t i = 0; i < object_hypotheses_.size(); i++)
+    for (auto && oh : object_hypotheses_)
     {
-        ObjectHypothesis oh = object_hypotheses_.at(i);
-
         cout << "Alignment of the object hypotheses " << i <<  " - " << oh.model_template.getModelId() << "_" << oh.model_template.getViewId() << "\n";
 
         PointCloudTypeConstPtr template_cloud = oh.model_template.getPointCloud();
@@ -368,14 +372,13 @@ void Recognizer::recognize()
 
     vector<PointCloudTypeConstPtr> aligned_templates;
 
-    for(int i = 0; i < object_hypotheses_.size(); i++)
+    for (auto && oh : object_hypotheses_)
     {
-        ObjectHypothesis oh = object_hypotheses_.at(i);
         PointCloudTypeConstPtr template_cloud = oh.model_template.getPointCloud();
         PointCloudTypePtr template_aligned (new pcl::PointCloud<PointType>);
         pcl::transformPointCloud(*template_cloud, *template_aligned, oh.transformation);
 
-        aligned_templates.push_back(template_aligned);
+        aligned_templates.emplace(aligned_templates.end(), template_aligned);
     }
 
     pcl::GlobalHypothesesVerification<PointType, PointType> hyp_ver;
@@ -401,7 +404,7 @@ void Recognizer::recognize()
         {
 //            cout << " is GOOD! \n";
 
-            templates_temp.push_back(object_hypotheses_[i]);
+            templates_temp.emplace(templates_temp.end(), object_hypotheses_[i]);
         }
         else
         {
@@ -434,7 +437,7 @@ void Recognizer::recognize()
 
             if(oh.model_template.getModelId() == model_name)
             {
-                object_hypotheses_.push_back(oh);
+                object_hypotheses_.emplace(object_hypotheses_.end(), oh);
                 break;
             }
         }

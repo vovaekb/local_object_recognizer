@@ -3,6 +3,7 @@
 
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 
+#include <list>
 #include <ros/ros.h>
 
 // Boost
@@ -77,7 +78,7 @@ public:
 
     void setHVInlierThresh(const float &hv_thresh);
 
-    vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > getModels();
+    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > getModels();
 
     vector<string> getTrainingModelNames();
 
@@ -106,13 +107,13 @@ public:
     void recognize();
 
 private:
-    vector<FeatureCloud, Eigen::aligned_allocator<FeatureCloud> > object_templates;
-    vector<string> model_names_;
+    std::list<FeatureCloud, Eigen::aligned_allocator<FeatureCloud> > object_templates;
+    std::vector<string> model_names_;
     FeatureCloud target_;
-    vector<pcl::CorrespondencesPtr> template_scene_correspondences_;
+    std::list<pcl::CorrespondencesPtr> template_scene_correspondences_;
 
     // TODO: create a set of models - object instances
-    vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > object_hypotheses_;
+    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > object_hypotheses_;
 
     pcl::KdTreeFLANN<pcl::SHOT352> descr_matching;
     pcl::GeometricConsistencyGrouping<PointType, PointType> gc_clusterer;
