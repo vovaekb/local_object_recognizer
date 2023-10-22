@@ -14,17 +14,17 @@
 
 using namespace std;
 
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
-typedef pcl::PointCloud<PointType>::ConstPtr PointCloudTypeConstPtr;
+using PointType = pcl::PointXYZRGB PointType;
+using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
+using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
 
 string samples_path;
 string output_pcd_dir;
 string output_path(".");
 
 // Static parameters
-int clouds_number (6);
-float voxel_leaf_size_ (0.001);
+int clouds_number(6);
+float voxel_leaf_size_(0.001);
 
 // Containers for objects
 vector<PointCloudTypePtr> clouds;
@@ -37,9 +37,9 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
     cout << "Scale cloud\n";
     Eigen::Matrix4f cloud_transform = Eigen::Matrix4f::Identity();
 
-    cloud_transform(0,0) = 0.001;
-    cloud_transform(1,1) = 0.001;
-    cloud_transform(2,2) = 0.001;
+    cloud_transform(0, 0) = 0.001;
+    cloud_transform(1, 1) = 0.001;
+    cloud_transform(2, 2) = 0.001;
 
     pcl::transformPointCloud(*cloud, *cloud, cloud_transform);
 
@@ -49,7 +49,7 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
     voxel_grid.setInputCloud(cloud);
     voxel_grid.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
-    PointCloudTypePtr temp_cloud (new pcl::PointCloud<PointType> ());
+    PointCloudTypePtr temp_cloud(new pcl::PointCloud<PointType>());
     voxel_grid.filter(*temp_cloud);
     cloud = temp_cloud;
 
@@ -67,17 +67,18 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
 
 void process()
 {
-    if(!boost::filesystem::exists(output_pcd_dir)) boost::filesystem::create_directory(output_pcd_dir);
+    if (!boost::filesystem::exists(output_pcd_dir))
+        boost::filesystem::create_directory(output_pcd_dir);
 
     // Load point clouds
-    for(int i = 1; i <= clouds_number; i++)
+    for (int i = 1; i <= clouds_number; i++)
     {
         string pcd_path = samples_path + "/" + boost::to_string(i) + ".pcd";
 
-        if(boost::filesystem::exists(pcd_path))
+        if (boost::filesystem::exists(pcd_path))
         {
-            PointCloudTypePtr cloud (new pcl::PointCloud<PointType> ());
-            if(pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
+            PointCloudTypePtr cloud(new pcl::PointCloud<PointType>());
+            if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
             {
                 return;
             }
@@ -105,7 +106,7 @@ void parseCommandLine()
     bool show_help(false);
     private_node_handle_.getParam("h", show_help);
 
-    if(show_help)
+    if (show_help)
     {
         showHelp();
         exit(0);
@@ -113,7 +114,7 @@ void parseCommandLine()
 
     private_node_handle_.getParam("samples_path", samples_path);
 
-    if(samples_path == "")
+    if (samples_path == "")
     {
         cout << "Samples directory missing!\n";
         showHelp();
@@ -123,7 +124,7 @@ void parseCommandLine()
     private_node_handle_.getParam("clouds_n", clouds_number);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     ros::init(argc, argv, "view_preprocess");
 
@@ -139,4 +140,3 @@ int main(int argc, char** argv)
     process();
     return 0;
 }
-

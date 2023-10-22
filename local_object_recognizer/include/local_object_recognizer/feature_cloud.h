@@ -12,45 +12,42 @@
 
 using namespace std;
 
+using PointType = pcl::PointXYZRGB;
+using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
+using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
+using NormalType = pcl::Normal;
+using NormalCloudType = pcl::PointCloud<NormalType>::Ptr;
+using SHOTDescriptorType = pcl::SHOT352;
+using SHOTDescriptorCloudType = pcl::PointCloud<SHOTDescriptorType>::Ptr;
 
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
-typedef pcl::PointCloud<PointType>::ConstPtr PointCloudTypeConstPtr;
-typedef pcl::Normal NormalType;
-typedef pcl::PointCloud<NormalType>::Ptr NormalCloudType;
-typedef pcl::SHOT352 SHOTDescriptorType;
-typedef pcl::PointCloud<SHOTDescriptorType>::Ptr SHOTDescriptorCloudType;
-
-
-double computeCloudResolution(const PointCloudTypeConstPtr& cloud);
-
+double computeCloudResolution(const PointCloudTypeConstPtr &cloud);
 
 /*  FeatureCloud class */
 class FeatureCloud
 {
 public:
-    FeatureCloud ();
+    FeatureCloud();
 
-    ~FeatureCloud ();
+    ~FeatureCloud();
 
     // Process the given cloud
     void setInputCloud(PointCloudTypePtr xyz, const string &cloud_type);
     // Load and process point cloud in the given PCD
     void loadInputCloud(const string &pcd_file, const string &cloud_type);
 
-    void setPose(const Eigen::Matrix4f && pose);
+    void setPose(const Eigen::Matrix4f &&pose);
 
     void setModelId(const string &model_id);
 
     void setViewId(const int &view_id);
 
-    PointCloudTypePtr getPointCloud () const;
+    PointCloudTypePtr getPointCloud() const;
 
-    NormalCloudType getSurfaceNormals () const;
+    NormalCloudType getSurfaceNormals() const;
 
-    PointCloudTypePtr getKeypoints () const;
+    PointCloudTypePtr getKeypoints() const;
 
-    SHOTDescriptorCloudType getLocalFeatures () const;
+    SHOTDescriptorCloudType getLocalFeatures() const;
 
     Eigen::Matrix4f getPose() const;
 
@@ -59,13 +56,13 @@ public:
     int getViewId() const;
 
 protected:
-    void processInput ();
+    void processInput();
 
-    void computeSurfaceNormals ();
+    void computeSurfaceNormals();
 
-    void extractKeypoints ();
+    void extractKeypoints();
 
-    void computeLocalFeatures ();
+    void computeLocalFeatures();
 
 private:
     // Point cloud data

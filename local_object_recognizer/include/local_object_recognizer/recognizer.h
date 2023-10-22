@@ -37,11 +37,11 @@
 #include "local_object_recognizer/feature_cloud.h"
 #include "local_object_recognizer/persistence_utils.h"
 
-typedef pcl::PointXYZRGB PointType;
-typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
-typedef pcl::PointCloud<PointType>::ConstPtr PointCloudTypeConstPtr;
-typedef pcl::Normal NormalType;
-typedef pcl::SHOT352 SHOTDescriptorType;
+using PointType = pcl::PointXYZRGB;
+using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
+using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
+using NormalType = pcl::Normal;
+using SHOTDescriptorType = pcl::SHOT352;
 
 using namespace std;
 
@@ -57,14 +57,13 @@ public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
-
-    typedef pcl::PointXYZRGB PointType;
-    typedef pcl::Normal NormalType;
-    typedef pcl::ReferenceFrame RFType;
-    typedef pcl::SHOT352 SHOTDescriptorType;
+    using PointType = pcl::PointXYZRGB;
+    using NormalType = pcl::Normal;
+    using RFType = pcl::ReferenceFrame;
+    using SHOTDescriptorType = pcl::SHOT352;
     Recognizer();
 
-    ~Recognizer ();
+    ~Recognizer();
 
     void setTrainingDir(const string &training_dir);
 
@@ -78,42 +77,42 @@ public:
 
     void setHVInlierThresh(const float &hv_thresh);
 
-    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > getModels();
+    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> getModels();
 
     vector<string> getTrainingModelNames();
 
     void addTemplateCloud(FeatureCloud &template_cloud);
 
-    void addModelId(const string & model_name);
+    void addModelId(const string &model_name);
 
     void printModels();
 
     // Matching
-    void match ();
+    void match();
 
     // CG for one template
-    void group_template_correspondences (FeatureCloud &template_cloud, const int index);
+    void group_template_correspondences(FeatureCloud &template_cloud, const int index);
 
     // CG over all templates
-    void group_correspondences ();
+    void group_correspondences();
 
     // HV
-    void hypotheses_verification ();
+    void hypotheses_verification();
 
     // ICP alignment over all templates
-    void alignAll ();
+    void alignAll();
 
     // Find the best object hypotheses and their 6DOF poses
     void recognize();
 
 private:
-    std::list<FeatureCloud, Eigen::aligned_allocator<FeatureCloud> > object_templates;
+    std::list<FeatureCloud, Eigen::aligned_allocator<FeatureCloud>> object_templates;
     std::vector<string> model_names_;
     FeatureCloud target_;
     std::list<pcl::CorrespondencesPtr> template_scene_correspondences_;
 
     // TODO: create a set of models - object instances
-    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > object_hypotheses_;
+    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
 
     pcl::KdTreeFLANN<pcl::SHOT352> descr_matching;
     pcl::GeometricConsistencyGrouping<PointType, PointType> gc_clusterer;

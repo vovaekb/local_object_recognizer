@@ -15,11 +15,10 @@
 
 using namespace std;
 
-typedef pcl::PointXYZ PointType;
-typedef pcl::PointCloud<PointType>::Ptr PointCloudTypePtr;
+using PointType = pcl::PointXYZ;
+using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
 
-int
-main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     // Perform uniform sampling
     string ply_file(argv[1]);
@@ -39,7 +38,7 @@ main(int argc, char** argv)
     reader->Update();
 
     // VTK is not exactly straightforward...
-    vtkSmartPointer < vtkPolyDataMapper > mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
+    vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
     mapper->SetInputConnection(reader->GetOutputPort());
     mapper->Update();
 
@@ -69,7 +68,7 @@ main(int argc, char** argv)
     // Object for storing the rendered views.
     std::vector<PointCloudTypePtr> views;
     // Object for storing the poses, as 4x4 transformation matrices.
-    std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > poses;
+    std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> poses;
     // Object for storing the entropies (optional).
     std::vector<float> entropies;
     render_views.getViews(views);
@@ -77,7 +76,7 @@ main(int argc, char** argv)
     render_views.getEntropies(entropies);
 
     size_t j = 0;
-    for (auto && pose : poses)
+    for (auto &&pose : poses)
     {
         cout << "Instance " << (j + 1) << ":\n";
 
@@ -96,17 +95,16 @@ main(int argc, char** argv)
         j++;
     }
 
-    for (auto && view : views)
+    for (auto &&view : views)
     {
         cout << "Cloud " << i << " has " << view->points.size() << " points\n";
         stringstream ss_cloud;
         ss_cloud << samples_dir << "/" << i << ".pcd";
         cout << ss_cloud.str() << "\n";
-        PointCloudTypePtr cloud_sample (new pcl::PointCloud<PointType> ());
+        PointCloudTypePtr cloud_sample(new pcl::PointCloud<PointType>());
         *cloud_sample = *view;
         pcl::io::savePCDFileASCII(ss_cloud.str(), *cloud_sample);
 
         cout << ss_cloud.str() << " was saved\n";
     }
 }
-
