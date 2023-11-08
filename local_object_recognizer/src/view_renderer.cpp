@@ -13,10 +13,9 @@
 #include <pcl/apps/render_views_tesselated_sphere.h>
 #include "local_object_recognizer/persistence_utils.h"
 
-using namespace std;
+#include "typedefs.h"
 
-using PointType = pcl::PointXYZ;
-using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
+using namespace std;
 
 int main(int argc, char **argv)
 {
@@ -66,7 +65,7 @@ int main(int argc, char **argv)
     render_views.generateViews();
 
     // Object for storing the rendered views.
-    std::vector<PointCloudTypePtr> views;
+    std::vector<PointCloudNoColorPtr> views;
     // Object for storing the poses, as 4x4 transformation matrices.
     std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> poses;
     // Object for storing the entropies (optional).
@@ -101,7 +100,7 @@ int main(int argc, char **argv)
         stringstream ss_cloud;
         ss_cloud << samples_dir << "/" << i << ".pcd";
         cout << ss_cloud.str() << "\n";
-        PointCloudTypePtr cloud_sample(new pcl::PointCloud<PointType>());
+        PointCloudNoColorPtr cloud_sample(new PointCloudNoColor());
         *cloud_sample = *view;
         pcl::io::savePCDFileASCII(ss_cloud.str(), *cloud_sample);
 

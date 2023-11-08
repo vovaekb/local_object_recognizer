@@ -10,17 +10,11 @@
 #include <pcl/pcl_macros.h>
 #include <pcl/io/pcd_io.h>
 
+#include "typedefs.h"
+
 using namespace std;
 
-using PointType = pcl::PointXYZRGB;
-using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
-using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
-using NormalType = pcl::Normal;
-using NormalCloudType = pcl::PointCloud<NormalType>::Ptr;
-using SHOTDescriptorType = pcl::SHOT352;
-using SHOTDescriptorCloudType = pcl::PointCloud<SHOTDescriptorType>::Ptr;
-
-double computeCloudResolution(const PointCloudTypeConstPtr &cloud);
+double computeCloudResolution(const PointCloudConstPtr &cloud);
 
 /*  FeatureCloud class */
 class FeatureCloud
@@ -31,7 +25,7 @@ public:
     ~FeatureCloud();
 
     // Process the given cloud
-    void setInputCloud(PointCloudTypePtr xyz, const string &cloud_type);
+    void setInputCloud(PointCloudPtr xyz, const string &cloud_type);
     // Load and process point cloud in the given PCD
     void loadInputCloud(const string &pcd_file, const string &cloud_type);
 
@@ -41,13 +35,13 @@ public:
 
     void setViewId(const int &view_id);
 
-    PointCloudTypePtr getPointCloud() const;
+    PointCloudPtr getPointCloud() const;
 
-    NormalCloudType getSurfaceNormals() const;
+    SurfaceNormalsPtr getSurfaceNormals() const;
 
-    PointCloudTypePtr getKeypoints() const;
+    PointCloudPtr getKeypoints() const;
 
-    SHOTDescriptorCloudType getLocalFeatures() const;
+    SHOTDescriptorCloudPtr getLocalFeatures() const;
 
     Eigen::Matrix4f getPose() const;
 
@@ -66,10 +60,10 @@ protected:
 
 private:
     // Point cloud data
-    PointCloudTypePtr xyz_;
-    NormalCloudType normals_;
-    PointCloudTypePtr keypoints_;
-    SHOTDescriptorCloudType features_;
+    PointCloudPtr xyz_;
+    SurfaceNormalsPtr normals_;
+    PointCloudPtr keypoints_;
+    SHOTDescriptorCloudPtr features_;
     Eigen::Matrix4f pose_;
 
     string cloud_type_;

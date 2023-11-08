@@ -12,11 +12,9 @@
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/filters/voxel_grid.h>
 
-using namespace std;
+#include "typedefs.h"
 
-using PointType = pcl::PointXYZRGB PointType;
-using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
-using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
+using namespace std;
 
 string samples_path;
 string output_pcd_dir;
@@ -27,11 +25,11 @@ int clouds_number(6);
 float voxel_leaf_size_(0.001);
 
 // Containers for objects
-vector<PointCloudTypePtr> clouds;
+vector<PointCloudPtr> clouds;
 
 vector<int> mapping;
 
-void process_cloud(PointCloudTypePtr &cloud, int index)
+void process_cloud(PointCloudPtr &cloud, int index)
 {
     // Scale cloud, ...
     cout << "Scale cloud\n";
@@ -49,7 +47,7 @@ void process_cloud(PointCloudTypePtr &cloud, int index)
     voxel_grid.setInputCloud(cloud);
     voxel_grid.setLeafSize(voxel_leaf_size_, voxel_leaf_size_, voxel_leaf_size_);
 
-    PointCloudTypePtr temp_cloud(new pcl::PointCloud<PointType>());
+    PointCloudPtr temp_cloud(new PointCloud());
     voxel_grid.filter(*temp_cloud);
     cloud = temp_cloud;
 
@@ -77,7 +75,7 @@ void process()
 
         if (boost::filesystem::exists(pcd_path))
         {
-            PointCloudTypePtr cloud(new pcl::PointCloud<PointType>());
+            PointCloudPtr cloud(new PointCloud());
             if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
             {
                 return;

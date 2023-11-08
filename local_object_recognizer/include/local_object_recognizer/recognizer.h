@@ -37,11 +37,7 @@
 #include "local_object_recognizer/feature_cloud.h"
 #include "local_object_recognizer/persistence_utils.h"
 
-using PointType = pcl::PointXYZRGB;
-using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
-using PointCloudTypeConstPtr = pcl::PointCloud<PointType>::ConstPtr;
-using NormalType = pcl::Normal;
-using SHOTDescriptorType = pcl::SHOT352;
+#include "local_object_recognizer/typedefs.h"
 
 using namespace std;
 
@@ -57,10 +53,8 @@ public:
         EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     };
 
-    using PointType = pcl::PointXYZRGB;
-    using NormalType = pcl::Normal;
-    using RFType = pcl::ReferenceFrame;
-    using SHOTDescriptorType = pcl::SHOT352;
+    using ObjectHypothesisAllocator = Eigen::aligned_allocator<ObjectHypothesis>;
+
     Recognizer();
 
     ~Recognizer();
@@ -77,7 +71,7 @@ public:
 
     void setHVInlierThresh(const float &hv_thresh);
 
-    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> getModels();
+    std::list<ObjectHypothesis, ObjectHypothesisAllocator> getModels();
 
     vector<string> getTrainingModelNames();
 
@@ -112,9 +106,9 @@ private:
     std::list<pcl::CorrespondencesPtr> template_scene_correspondences_;
 
     // TODO: create a set of models - object instances
-    std::list<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> object_hypotheses_;
+    std::list<ObjectHypothesis, ObjectHypothesisAllocator> object_hypotheses_;
 
-    pcl::KdTreeFLANN<pcl::SHOT352> descr_matching;
+    pcl::KdTreeFLANN<SHOTDescriptorType> descr_matching;
     pcl::GeometricConsistencyGrouping<PointType, PointType> gc_clusterer;
     pcl::IterativeClosestPoint<PointType, PointType> icp;
     string training_dir_;

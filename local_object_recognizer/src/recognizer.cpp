@@ -36,19 +36,18 @@
 #include "local_object_recognizer/persistence_utils.h"
 #include "local_object_recognizer/recognizer.h"
 
-Recognizer::Recognizer() :
-    cg_size_ (cg_size),
-    cg_thresh_ (cg_threshold),
-    rf_rad_ (rf_radius),
-    threshold_accept_model_hypothesis_(0.3f),
-    icp_max_iter_ (icp_max_iter),
-    icp_corr_distance_ (icp_corr_distance),
-    icp_fitness_eps_ (icp_fitness_eps),
-    hv_clutter_reg_ (hv_clutter_reg),
-    hv_inlier_th_ (hv_inlier_thresh),
-    hv_rad_clutter_ (hv_rad_clutter),
-    hv_regularizer_ (hv_regularizer),
-    hv_detect_clutter_ (false)
+Recognizer::Recognizer() : cg_size_(cg_size),
+                           cg_thresh_(cg_threshold),
+                           rf_rad_(rf_radius),
+                           threshold_accept_model_hypothesis_(0.3f),
+                           icp_max_iter_(icp_max_iter),
+                           icp_corr_distance_(icp_corr_distance),
+                           icp_fitness_eps_(icp_fitness_eps),
+                           hv_clutter_reg_(hv_clutter_reg),
+                           hv_inlier_th_(hv_inlier_thresh),
+                           hv_rad_clutter_(hv_rad_clutter),
+                           hv_regularizer_(hv_regularizer),
+                           hv_detect_clutter_(false)
 {
     gc_clusterer.setGCSize(cg_size_);
     gc_clusterer.setGCThreshold(cg_thresh_);
@@ -92,7 +91,7 @@ void Recognizer::setHVInlierThresh(const float &hv_thresh)
     hv_inlier_th_ = hv_thresh;
 }
 
-std::list<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis> > Recognizer::getModels()
+std::list<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis>> Recognizer::getModels()
 {
     return object_hypotheses_;
 }
@@ -116,7 +115,7 @@ void Recognizer::printModels()
 {
     cout << "Recognizer.model_names:\n";
 
-    for(int i = 0; i < model_names_.size(); i++)
+    for (int i = 0; i < model_names_.size(); i++)
     {
         cout << " * " << model_names_.at(i) << "\n";
     }
@@ -132,21 +131,21 @@ void Recognizer::match()
     template_scene_correspondences_.clear();
 
     int i = 0;
-    for (auto && obj_template : object_templates)
+    for (auto &&obj_template : object_templates)
     {
         cout << "\n\nMatching for model template " << i << "\n";
         shot_matching.setInputCloud(obj_template.getLocalFeatures());
         // A Correspondence object stores the indices of the query and the match,
         // and the distance/weight.
-        pcl::CorrespondencesPtr correspondences (new pcl::Correspondences());
+        pcl::CorrespondencesPtr correspondences(new pcl::Correspondences());
 
         // Check every descriptor computed for the scene
-        for(size_t j = 0; j < target_.getLocalFeatures()->size(); ++j)
+        for (size_t j = 0; j < target_.getLocalFeatures()->size(); ++j)
         {
             vector<int> neighbors(1);
             vector<float> squared_distances(1);
             // Ignore NaNs.
-            if(pcl_isfinite(target_.getLocalFeatures()->at(j).descriptor[0]))
+            if (pcl_isfinite(target_.getLocalFeatures()->at(j).descriptor[0]))
             {
                 int k = 1; // number of neighbors
                 neighbors.resize(k);
@@ -155,7 +154,7 @@ void Recognizer::match()
                 int neighbor_count = shot_matching.nearestKSearch(target_.getLocalFeatures()->at(j), k, neighbors, squared_distances);
                 // ...and add a new correspondence if the distance is less than a threshold
                 // (SHOT distances are between 0 and 1).
-                if(neighbor_count == 1 && squared_distances[0] <  0.25f)
+                if (neighbor_count == 1 && squared_distances[0] < 0.25f)
                 {
                     pcl::Correspondence correspondence(neighbors[0], static_cast<int>(j), squared_distances[0]);
                     correspondences->push_back(correspondence);
@@ -174,20 +173,19 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
 {
     vector<pcl::Correspondences> corresp_clusters;
 
-    std::list<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f> > transformations;
+    std::list<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> transformations;
 
-    PointCloudTypePtr template_keypoints = model_template.getKeypoints();
-    NormalCloudType template_normals = model_template.getSurfaceNormals();
-    PointCloudTypePtr template_cloud = model_template.getPointCloud();
+    PointCloudPtr template_keypoints = model_template.getKeypoints();
+    SurfaceNormalsPtr template_normals = model_template.getSurfaceNormals();
+    PointCloudPtr template_cloud = model_template.getPointCloud();
 
     // Geometric consistency
-    if(!use_hough)
+    if (!use_hough)
     {
-//        cout << "Perform GC algorithm\n";
+        //        cout << "Perform GC algorithm\n";
 
         gc_clusterer.setInputCloud(model_template.getKeypoints());
         gc_clusterer.setSceneCloud(target_.getKeypoints());
-
 
         gc_clusterer.setModelSceneCorrespondences(template_scene_correspondences_[index]);
 
@@ -195,42 +193,42 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
     }
     else
     {
-//        cout << "Perform Hough voting algorithm\n";
+        //        cout << "Perform Hough voting algorithm\n";
 
         // Hough Voting
         //
         //  Compute (Keypoints) Reference Frames only for Hough
         //
-        pcl::PointCloud<RFType>::Ptr model_rf (new pcl::PointCloud<RFType> ());
-        pcl::PointCloud<RFType>::Ptr scene_rf (new pcl::PointCloud<RFType> ());
+        RFCloudPtr model_rf(new RFCloud());
+        RFCloudPtr scene_rf(new RFCloud());
 
         pcl::BOARDLocalReferenceFrameEstimation<PointType, NormalType, RFType> rf_est;
-        rf_est.setFindHoles (true);
-        rf_est.setRadiusSearch (rf_rad_);
+        rf_est.setFindHoles(true);
+        rf_est.setRadiusSearch(rf_rad_);
 
-        rf_est.setInputCloud (template_keypoints);
-        rf_est.setInputNormals (template_normals);
-        rf_est.setSearchSurface (template_cloud);
-        rf_est.compute (*model_rf);
+        rf_est.setInputCloud(template_keypoints);
+        rf_est.setInputNormals(template_normals);
+        rf_est.setSearchSurface(template_cloud);
+        rf_est.compute(*model_rf);
 
-        rf_est.setInputCloud (target_.getKeypoints());
-        rf_est.setInputNormals (target_.getSurfaceNormals());
-        rf_est.setSearchSurface (target_.getPointCloud());
-        rf_est.compute (*scene_rf);
+        rf_est.setInputCloud(target_.getKeypoints());
+        rf_est.setInputNormals(target_.getSurfaceNormals());
+        rf_est.setSearchSurface(target_.getPointCloud());
+        rf_est.compute(*scene_rf);
 
         //  Clustering
         pcl::Hough3DGrouping<PointType, PointType, RFType, RFType> clusterer;
-        clusterer.setHoughBinSize (cg_size_);
-        clusterer.setHoughThreshold (cg_thresh_);
-        clusterer.setUseInterpolation (true);
-        clusterer.setUseDistanceWeight (false);
+        clusterer.setHoughBinSize(cg_size_);
+        clusterer.setHoughThreshold(cg_thresh_);
+        clusterer.setUseInterpolation(true);
+        clusterer.setUseDistanceWeight(false);
 
-        clusterer.setInputCloud (template_keypoints);
-        clusterer.setInputRf (model_rf);
-        clusterer.setSceneCloud (target_.getKeypoints());
-        clusterer.setSceneRf (scene_rf);
+        clusterer.setInputCloud(template_keypoints);
+        clusterer.setInputRf(model_rf);
+        clusterer.setSceneCloud(target_.getKeypoints());
+        clusterer.setSceneRf(scene_rf);
 
-        clusterer.setModelSceneCorrespondences (template_scene_correspondences_[index]);
+        clusterer.setModelSceneCorrespondences(template_scene_correspondences_[index]);
 
         clusterer.cluster(corresp_clusters);
     }
@@ -238,52 +236,48 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
     cout << "Clusters for model " << index << " found: " << corresp_clusters.size() << "\n";
 
     // Correspondence cardinality based rejection step
-    std::list<bool> good_indices_for_hypotheses (corresp_clusters.size(), true);
-
+    std::list<bool> good_indices_for_hypotheses(corresp_clusters.size(), true);
 
     // sort the hypotheses for each model according to their correspondences and take those that are threshold_accept_model_hypothesis_ over the max cardinality
     int max_cardinality = -1;
-    for(size_t i = 0; i < corresp_clusters.size(); i++)
+    for (size_t i = 0; i < corresp_clusters.size(); i++)
     {
-        if(max_cardinality < static_cast<int> (corresp_clusters[i].size()))
+        if (max_cardinality < static_cast<int>(corresp_clusters[i].size()))
         {
-            max_cardinality = static_cast<int> (corresp_clusters[i].size());
+            max_cardinality = static_cast<int>(corresp_clusters[i].size());
         }
     }
 
-    for(size_t i = 0; i < corresp_clusters.size(); i++)
+    for (size_t i = 0; i < corresp_clusters.size(); i++)
     {
-        if(static_cast<float> (corresp_clusters[i].size()) < (threshold_accept_model_hypothesis_ * static_cast<float> (max_cardinality)))
+        if (static_cast<float>(corresp_clusters[i].size()) < (threshold_accept_model_hypothesis_ * static_cast<float>(max_cardinality)))
         {
             good_indices_for_hypotheses[i] = false;
         }
     }
 
-
     cout << "Perform TransformationEstimationSVD\n";
 
-    for(size_t i = 0; i < corresp_clusters.size(); i++)
+    for (size_t i = 0; i < corresp_clusters.size(); i++)
     {
-        if(!good_indices_for_hypotheses[i])
+        if (!good_indices_for_hypotheses[i])
             continue;
 
         Eigen::Matrix4f best_trans;
-        pcl::registration::TransformationEstimationSVD <PointType, PointType> t_est;
+        pcl::registration::TransformationEstimationSVD<PointType, PointType> t_est;
         t_est.estimateRigidTransformation(*template_keypoints, *(target_.getKeypoints()), corresp_clusters[i], best_trans);
         transformations.emplace(transformations.end(), std::move(best_trans));
     }
 
     cout << "Clusters survived after the cardinality rejection: " << transformations.size() << "\n\n\n";
 
-
-    for (auto && transformation : transformations)
+    for (auto &&transformation : transformations)
     {
         ObjectHypothesis oh;
         oh.model_template = model_template;
         oh.transformation = transformation;
         object_hypotheses_.emplace(object_hypotheses_.end(), oh);
     }
-
 }
 
 void Recognizer::group_correspondences()
@@ -291,7 +285,7 @@ void Recognizer::group_correspondences()
     cout << "\n---------------- Correspondences grouping --------------------\n";
 
     int i = 0;
-    for (auto && obj_template : object_templates)
+    for (auto &&obj_template : object_templates)
     {
         cout << "CG algorithm for object template: " << i << "\n";
 
@@ -300,29 +294,28 @@ void Recognizer::group_correspondences()
     }
 }
 
-
 void Recognizer::alignAll()
 {
     cout << "-------------- ICP -----------------\n";
 
     cout << "Number of hypotheses: " << object_hypotheses_.size() << "\n";
 
-    for (auto && oh : object_hypotheses_)
+    for (auto &&oh : object_hypotheses_)
     {
-        cout << "Alignment of the object hypotheses " << i <<  " - " << oh.model_template.getModelId() << "_" << oh.model_template.getViewId() << "\n";
+        cout << "Alignment of the object hypotheses " << i << " - " << oh.model_template.getModelId() << "_" << oh.model_template.getViewId() << "\n";
 
-        PointCloudTypeConstPtr template_cloud = oh.model_template.getPointCloud();
-        PointCloudTypePtr template_aligned (new pcl::PointCloud<PointType> ());
+        PointCloudConstPtr template_cloud = oh.model_template.getPointCloud();
+        PointCloudPtr template_aligned(new PointCloud());
         pcl::transformPointCloud(*template_cloud, *template_aligned, oh.transformation);
 
         pcl::IterativeClosestPoint<PointType, PointType> icp;
 
         // RANSAC
-        if(perform_ransac)
+        if (perform_ransac)
         {
-            pcl::registration::CorrespondenceRejectorSampleConsensus<PointType>::Ptr rej (new pcl::registration::CorrespondenceRejectorSampleConsensus<PointType> ());
+            pcl::registration::CorrespondenceRejectorSampleConsensus<PointType>::Ptr rej(new pcl::registration::CorrespondenceRejectorSampleConsensus<PointType>());
             rej->setInputTarget(target_.getPointCloud());
-            rej->setMaximumIterations (sac_max_iters);
+            rej->setMaximumIterations(sac_max_iters);
             rej->setInlierThreshold(sac_inlier_thresh);
             rej->setInputSource(template_aligned);
 
@@ -332,7 +325,7 @@ void Recognizer::alignAll()
         icp.setMaximumIterations(icp_max_iter_);
         icp.setInputTarget(target_.getPointCloud());
         icp.setInputSource(template_aligned);
-        PointCloudTypePtr registered (new pcl::PointCloud<PointType> ());
+        PointCloudPtr registered(new PointCloud());
         icp.align(*registered);
 
         Eigen::Matrix4f icp_trans = icp.getFinalTransformation();
@@ -362,7 +355,7 @@ void Recognizer::recognize()
 
     cout << "------------------- Hypotheses verification ------------------------\n";
 
-    if(!object_hypotheses_.size())
+    if (!object_hypotheses_.size())
     {
         cout << "No object hypotheses found\n";
         return;
@@ -370,12 +363,12 @@ void Recognizer::recognize()
 
     vector<bool> hypotheses_mask; // Mask vector to identify positive hypotheses
 
-    vector<PointCloudTypeConstPtr> aligned_templates;
+    vector<PointCloudConstPtr> aligned_templates;
 
-    for (auto && oh : object_hypotheses_)
+    for (auto &&oh : object_hypotheses_)
     {
-        PointCloudTypeConstPtr template_cloud = oh.model_template.getPointCloud();
-        PointCloudTypePtr template_aligned (new pcl::PointCloud<PointType>);
+        PointCloudConstPtr template_cloud = oh.model_template.getPointCloud();
+        PointCloudPtr template_aligned(new PointCloud);
         pcl::transformPointCloud(*template_cloud, *template_aligned, oh.transformation);
 
         aligned_templates.emplace(aligned_templates.end(), template_aligned);
@@ -395,54 +388,50 @@ void Recognizer::recognize()
     hyp_ver.verify();
     hyp_ver.getMask(hypotheses_mask);
 
-    vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis> > templates_temp;
+    vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> templates_temp;
 
-    for(int i = 0; i < hypotheses_mask.size(); i++)
+    for (int i = 0; i < hypotheses_mask.size(); i++)
     {
-//        cout << "Hypothesis " << i;
-        if(hypotheses_mask[i])
+        //        cout << "Hypothesis " << i;
+        if (hypotheses_mask[i])
         {
-//            cout << " is GOOD! \n";
+            //            cout << " is GOOD! \n";
 
             templates_temp.emplace(templates_temp.end(), object_hypotheses_[i]);
         }
         else
         {
-//            cout << " is bad!\n";
+            //            cout << " is bad!\n";
         }
-
     }
 
     cout << "-------------------\n";
 
     // Order found hypotheses by ICP score
-    sort(templates_tmp.begin(), templates_tmp.end(), 
-        [](const ObjectHypothesis& d1, const ObjectHypothesis& d2)
-        { 
-            return d1.icp_score < d2.icp_score 
-        });
+    sort(templates_tmp.begin(), templates_tmp.end(),
+         [](const ObjectHypothesis &d1, const ObjectHypothesis &d2)
+         {
+             return d1.icp_score < d2.icp_score
+         });
 
     // For every model find the best hypothesis
     object_hypotheses_.clear();
 
-    for(int i = 0; i < model_names_.size(); i++)
+    for (int i = 0; i < model_names_.size(); i++)
     {
         string model_name = model_names_[i];
 
         cout << "Search for the best hypothesis for the model: " << model_name << "\n";
 
-        for(int j = 0; j < templates_temp.size(); j++)
+        for (int j = 0; j < templates_temp.size(); j++)
         {
             ObjectHypothesis oh = templates_temp[j];
 
-            if(oh.model_template.getModelId() == model_name)
+            if (oh.model_template.getModelId() == model_name)
             {
                 object_hypotheses_.emplace(object_hypotheses_.end(), oh);
                 break;
             }
         }
     }
-
 }
-
-

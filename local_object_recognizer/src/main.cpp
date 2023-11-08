@@ -31,11 +31,6 @@ ros::Publisher model_pub;
 
 using namespace std;
 
-using PointType = pcl::PointXYZRGB;
-using PointCloudTypePtr = pcl::PointCloud<PointType>::Ptr;
-using NormalType = pcl::Normal;
-using SHOTDescriptorType = pcl::SHOT352;
-
 bool perform_verification(true);
 bool use_hough(true);
 bool use_hv(true);
@@ -78,7 +73,7 @@ Recognizer recognizer;
 void runRecognizer()
 {
     // Load scene cloud
-    PointCloudTypePtr scene_cloud(new pcl::PointCloud<PointType>());
+    PointCloudPtr scene_cloud(new PointCloud());
 
     //
     // Load scene
@@ -269,10 +264,10 @@ void runRecognizer()
 
             for (auto &&model : models)
             {
-                PointCloudTypePtr model_cloud = model.model_template.getPointCloud();
+                PointCloudPtr model_cloud = model.model_template.getPointCloud();
                 Eigen::Matrix4f transform = model.transformation; // 6DoF pose
 
-                PointCloudTypePtr aligned_model(new pcl::PointCloud<PointType>);
+                PointCloudPtr aligned_model(new PointCloud);
                 pcl::transformPointCloud(*model_cloud, *aligned_model, transform);
 
                 std::stringstream ss_cloud;
