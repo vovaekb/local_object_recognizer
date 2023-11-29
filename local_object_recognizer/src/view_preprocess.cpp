@@ -1,6 +1,9 @@
 #include <ros/ros.h>
 
 #include <iostream>
+#include <thread>
+#include <list>
+#include <vector>
 #include <boost/format.hpp>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -68,24 +71,45 @@ void process()
     if (!boost::filesystem::exists(output_pcd_dir))
         boost::filesystem::create_directory(output_pcd_dir);
 
-    // Load point clouds
-    for (int i = 1; i <= clouds_number; i++)
+    int threads_num = 4;
+    std::vector<thread> threads;
+    int clouds_chunk_size = clouds_number / threads_num;
+
+    // Load and process point clouds
+    for (int i = 1; i <= threads_num; i++)
     {
-        string pcd_path = samples_path + "/" + boost::to_string(i) + ".pcd";
-
-        if (boost::filesystem::exists(pcd_path))
-        {
-            PointCloudPtr cloud(new PointCloud());
-            if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
+        threads.emplace_back([&] () {
+            int start = i * clouds_chunk_size;
+            int end = (i == threads_num - 1) ? clouds_number : (i + 1) * clouds_chunk_size;
+            for (int j = start; j < end; j++)
             {
-                return;
+                string pcd_path = samples_path + "/" + boost::to_string(j) + ".pcd";
+
+                if (boost::filesystem::exists(pcd_path))
+                {
+                    PointCloudPtr cloud(new PointCloud());
+                    if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
+                    {
+                        return;
+                    }
+
+                    cout << "Point cloud " << boost::to_string(j) << ".pcd has " << cloud->points.size() << " points\n";
+                    process_cloud(cloud, j);
+                }
             }
-
-            cout << "Point cloud " << boost::to_string(i) << ".pcd has " << cloud->points.size() << " points\n";
-
-            process_cloud(cloud, i);
-        }
+        });
     }
+
+    for (auto &&t : threads)
+    {
+        if (t.joinable())
+        {
+            t.join();
+        }
+
+    }
+    threads.clear();
+
 }
 
 void showHelp()
