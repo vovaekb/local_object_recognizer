@@ -1,6 +1,8 @@
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 
 #include <list>
+#include <thread>
+#include <mutex>
 #include <ros/ros.h>
 
 // Boost
@@ -121,52 +123,81 @@ void Recognizer::printModels()
     }
 }
 
+void Recognizer::matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorKdTree& shot_matching)
+{
+    shot_matching.setInputCloud(obj_template.getLocalFeatures());
+    // A Correspondence object stores the indices of the query and the match,
+    // and the distance/weight.
+    pcl::CorrespondencesPtr correspondences(new pcl::Correspondences());
+
+    // Check every descriptor computed for the scene
+    for (size_t j = 0; j < target_.getLocalFeatures()->size(); ++j)
+    {
+        vector<int> neighbors(1);
+        vector<float> squared_distances(1);
+        // Ignore NaNs.
+        if (pcl_isfinite(target_.getLocalFeatures()->at(j).descriptor[0]))
+        {
+            int k = 1; // number of neighbors
+            neighbors.resize(k);
+            squared_distances.resize(k);
+            // Find the nearest neighbor (in descriptor space) ...
+            int neighbor_count = shot_matching.nearestKSearch(target_.getLocalFeatures()->at(j), k, neighbors, squared_distances);
+            // ...and add a new correspondence if the distance is less than a threshold
+            // (SHOT distances are between 0 and 1).
+            if (neighbor_count == 1 && squared_distances[0] < 0.25f)
+            {
+                pcl::Correspondence correspondence(neighbors[0], static_cast<int>(j), squared_distances[0]);
+                correspondences->push_back(correspondence);
+            }
+        }
+    }
+
+    cout << "[Recognizer::match] Found " << correspondences->size() << " correspondences\n";
+
+    std::mutex insert_mutex;
+    std::lock_guard<std::mutex> lk{insert_mutex};
+    template_scene_correspondences_ .push_back(correspondences);
+}
+
+
 void Recognizer::match()
 {
     cout << "\n\n---------------- Matching ------------------\n\n";
 
-    // A kd-tree object that uses the FLANN library for fast search of nearest neighbors.
-    pcl::KdTreeFLANN<SHOTDescriptorType> shot_matching;
-
     template_scene_correspondences_.clear();
 
-    int i = 0;
-    for (auto &&obj_template : object_templates)
-    {
-        cout << "\n\nMatching for model template " << i << "\n";
-        shot_matching.setInputCloud(obj_template.getLocalFeatures());
-        // A Correspondence object stores the indices of the query and the match,
-        // and the distance/weight.
-        pcl::CorrespondencesPtr correspondences(new pcl::Correspondences());
+    int threads_num = 4;
+    std::vector<std::thread> threads;
+    int object_templates_chunk_size = object_templates.size() / threads_num;
+    int object_templates_number = object_templates.size();
 
-        // Check every descriptor computed for the scene
-        for (size_t j = 0; j < target_.getLocalFeatures()->size(); ++j)
-        {
-            vector<int> neighbors(1);
-            vector<float> squared_distances(1);
-            // Ignore NaNs.
-            if (pcl_isfinite(target_.getLocalFeatures()->at(j).descriptor[0]))
+    for (int i = 0; i < threads_num; i++)
+    {
+        threads.emplace_back([&]() {
+            int start = i * object_templates_chunk_size;
+            int end = (i == threads_num - 1) ? object_templates_number : (i + 1) * object_templates_chunk_size;
+            for (int j = start; j < end; j++)
             {
-                int k = 1; // number of neighbors
-                neighbors.resize(k);
-                squared_distances.resize(k);
-                // Find the nearest neighbor (in descriptor space) ...
-                int neighbor_count = shot_matching.nearestKSearch(target_.getLocalFeatures()->at(j), k, neighbors, squared_distances);
-                // ...and add a new correspondence if the distance is less than a threshold
-                // (SHOT distances are between 0 and 1).
-                if (neighbor_count == 1 && squared_distances[0] < 0.25f)
-                {
-                    pcl::Correspondence correspondence(neighbors[0], static_cast<int>(j), squared_distances[0]);
-                    correspondences->push_back(correspondence);
-                }
+                cout << "\n\nMatching for model template " << j << "\n";
+                // A kd-tree object that uses the FLANN library for fast search of nearest neighbors.
+                SHOTDescriptorKdTree shot_matching;
+                auto obj_template = object_templates[j];
+                matchObjectTemplate(&obj_template, &shot_matching);
             }
+        });
+    }
+
+    for (auto &&t : threads)
+    {
+        if (t.joinable())
+        {
+            t.join();
         }
 
-        cout << "[Recognizer::match] Found " << correspondences->size() << " correspondences\n";
-
-        template_scene_correspondences_.push_back(correspondences);
-        i++;
     }
+    threads.clear();
+
 }
 
 void Recognizer::group_template_correspondences(FeatureCloud &model_template, const int index)
@@ -276,6 +307,9 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
         ObjectHypothesis oh;
         oh.model_template = model_template;
         oh.transformation = transformation;
+
+        std::mutex insert_mutex;
+        std::lock_guard<std::mutex> lk{insert_mutex};
         object_hypotheses_.emplace(object_hypotheses_.end(), oh);
     }
 }
@@ -284,14 +318,37 @@ void Recognizer::group_correspondences()
 {
     cout << "\n---------------- Correspondences grouping --------------------\n";
 
-    int i = 0;
-    for (auto &&obj_template : object_templates)
-    {
-        cout << "CG algorithm for object template: " << i << "\n";
+    int threads_num = 4;
+    std::vector<std::thread> threads;
+    int object_templates_chunk_size = object_templates.size() / threads_num;
+    int object_templates_number = object_templates.size();
 
-        group_template_correspondences(obj_template, i);
-        i++;
+    for (int i = 0; i < threads_num; i++)
+    {
+        threads.emplace_back([&]() {
+            int start = i * object_templates_chunk_size;
+            int end = (i == threads_num - 1) ? object_templates_number : (i + 1) * object_templates_chunk_size;
+            for (int j = start; j < end; j++)
+            {
+                cout << "CG algorithm for object template: " << i << "\n";
+
+                auto obj_template = object_templates[j];
+                group_template_correspondences(&obj_template, j);
+
+            }
+        });
     }
+
+    for (auto &&t : threads)
+    {
+        if (t.joinable())
+        {
+            t.join();
+        }
+
+    }
+    threads.clear();
+
 }
 
 void Recognizer::alignAll()
