@@ -1,7 +1,11 @@
 #pragma once
 
+#include <list>
+#include <Eigen/Core>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
+
+#include "local_object_recognizer/feature_cloud.h"
 
 // Type definitions for Point Cloud
 using PointType = pcl::PointXYZRGB;
@@ -26,3 +30,10 @@ using SHOTDescriptorCloudPtr = SHOTDescriptorCloud::Ptr;
 using RFType = pcl::ReferenceFrame;
 using RFCloud = pcl::PointCloud<RFType>;
 using RFCloudPtr = RFCloud::Ptr;
+
+using SHOTDescriptorKdTree = pcl::KdTreeFLANN<SHOTDescriptorType>;
+
+using FeatureCloudAllocator = Eigen::aligned_allocator<FeatureCloud>;
+using FeatureCloudList = std::list<FeatureCloud, FeatureCloudAllocator>;
+
+using CorrespondencesPtrList = std::list<pcl::CorrespondencesPtr>;

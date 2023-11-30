@@ -81,6 +81,8 @@ public:
 
     void printModels();
 
+    void matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorKdTree shot_matching);
+
     // Matching
     void match();
 
@@ -100,10 +102,10 @@ public:
     void recognize();
 
 private:
-    std::list<FeatureCloud, Eigen::aligned_allocator<FeatureCloud>> object_templates;
+    FeatureCloudList object_templates;
     std::vector<string> model_names_;
     FeatureCloud target_;
-    std::list<pcl::CorrespondencesPtr> template_scene_correspondences_;
+    CorrespondencesPtrList template_scene_correspondences_;
 
     // TODO: create a set of models - object instances
     std::list<ObjectHypothesis, ObjectHypothesisAllocator> object_hypotheses_;
