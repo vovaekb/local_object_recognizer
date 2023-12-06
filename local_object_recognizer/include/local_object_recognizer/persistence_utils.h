@@ -1,7 +1,9 @@
 #ifndef PERSISTENCE_UTILS_H
 #define PERSISTENCE_UTILS_H
 
+#include <math.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 
 using namespace std;
@@ -112,6 +114,39 @@ namespace PersistenceUtils
             in.close();
             return false;
         }
+    }
+
+    constexpr std::string getPoseFileName(auto view_id)
+    {
+        std::stringstream ss;
+        ss << dir.string() << "/pose_" << view_id << ".txt";
+        return ss.str();
+    }
+
+    constexpr std::string getGroundTruthFileName(string gt_files_dir, string gt_file)
+    {
+        std::stringstream gt_path_ss;
+        gt_path_ss << gt_files_dir << "/" << gt_file;
+        return gt_path_ss.str();
+    }
+
+    constexpr std::string getModelDescriptorDirName(string base_descr_dir, string model_name)
+    {
+        std::stringstream ss;
+        ss << base_descr_dir << "/" << model_name;
+        return ss.str();
+    }
+
+    constexpr std::string getModelViewPcdFileName(string samples_dir, int view_id)
+    {
+        stringstream ss;
+        ss << samples_dir << "/" << view_id << ".pcd";
+        return ss.str();
+    }
+
+    constexpr float radiansToDegrees(float radians)
+    {
+        return radians * 180 / M_PI;
     }
 }
 

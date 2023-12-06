@@ -31,12 +31,12 @@ ros::Publisher model_pub;
 
 using namespace std;
 
-bool perform_verification(true);
-bool use_hough(true);
-bool use_hv(true);
-bool visualize(false);
+auto perform_verification{true};
+auto use_hough(true);
+auto use_hv(true);
+auto visualize(false);
 
-bool perform_ransac(false);
+auto perform_ransac(false);
 // Algorithm params
 float descr_rad(0.03f);
 double rf_radius(0.01);
@@ -91,7 +91,7 @@ void runRecognizer()
 
     recognizer.recognize();
 
-    std::list<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis>> models = recognizer.getModels();
+    auto models = recognizer.getModels();
 
     // Visualize the found templates
     if (models.size())
@@ -106,7 +106,7 @@ void runRecognizer()
             exit(-1);
         }
 
-        for (auto &&model : models)
+        for (auto const &model : models)
         {
             string model_id = model.model_template.getModelId();
 
@@ -135,7 +135,7 @@ void runRecognizer()
                 Eigen::Vector3f gt_est_trans_diff = gt_trans - model_trans;
 
                 // Translation error
-                float trans_err = static_cast<float>(gt_est_trans_diff.norm());
+                auto trans_err = static_cast<float>(gt_est_trans_diff.norm());
 
                 cout << "Translation error: " << trans_err << "\n\n";
 
@@ -149,7 +149,7 @@ void runRecognizer()
 
                 double rot_x_error = acos(static_cast<double>(gt_rot_x.dot(model_rot_x)));
 
-                double rot_x_error_angle = rot_x_error * 180 / M_PI;
+                double rot_x_error_angle = PersistenceUtils::radiansToDegrees(rot_x_error);
 
                 printf("Rotation X error: %0.8f\n", rot_x_error);
 
@@ -162,7 +162,7 @@ void runRecognizer()
 
                 double rot_y_error = acos(static_cast<double>(gt_rot_y.dot(model_rot_y)));
 
-                double rot_y_error_angle = rot_y_error * 180 / M_PI;
+                double rot_y_error_angle = PersistenceUtils::radiansToDegrees(rot_y_error);
 
                 printf("Rotation Y error: %0.8f\n", rot_y_error);
 
@@ -175,7 +175,7 @@ void runRecognizer()
 
                 double rot_z_error = acos(static_cast<double>(gt_rot_z.dot(model_rot_z)));
 
-                double rot_z_error_angle = rot_z_error * 180 / M_PI;
+                double rot_z_error_angle = PersistenceUtils::radiansToDegrees(rot_z_error);
 
                 printf("Rotation Z error: %0.8f\n", rot_z_error);
 
@@ -194,21 +194,20 @@ void runRecognizer()
             }
         }
 
-        int positives_n = 0;
-        int negatives_n = 0;
-        int tp_n = 0;
-        int fp_n = 0;
-        int tn_n = 0;
-        int fn_n = 0;
+        auto positives_n = 0;
+        auto negatives_n = 0;
+        auto tp_n = 0;
+        auto fp_n = 0;
+        auto tn_n = 0;
+        auto fn_n = 0;
 
-        vector<string> model_names = recognizer.getTrainingModelNames();
-        for (int i = 0; i < model_names.size(); i++)
+        auto model_names = recognizer.getTrainingModelNames();
+        for (auto const& model_name : model_names)
         {
-            string model_name = model_names[i];
-            bool is_present = PersistenceUtils::modelPresents(gt_file_path, model_name);
-            bool is_found = false;
+            auto is_present = PersistenceUtils::modelPresents(gt_file_path, model_name);
+            auto is_found = false;
 
-            for (auto &&model : models)
+            for (auto const &model : models)
             {
                 if (model.model_template.getModelId() == model_name)
                     is_found = true;
@@ -262,7 +261,7 @@ void runRecognizer()
             viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "scene_cloud");
             viewer.addCoordinateSystem(1.0);
 
-            for (auto &&model : models)
+            for (auto const &model : models)
             {
                 PointCloudPtr model_cloud = model.model_template.getPointCloud();
                 Eigen::Matrix4f transform = model.transformation; // 6DoF pose
@@ -326,7 +325,7 @@ void getModelsFromDir(boost::filesystem::path &dir)
                 stringstream ss;
                 ss << dir.string() << "/pose_" << view_id << ".txt";
 
-                string pose_file = ss.str();
+                string pose_file = PersistenceUtils::getPoseFileName(view_id);
 
                 Eigen::Matrix4f pose;
 
@@ -353,7 +352,7 @@ void recognize()
 
     std::stringstream ss;
     ss << base_descr_dir << "/" << model_name;
-    model_descr_dir = ss.str();
+    model_descr_dir = PersistenceUtils::getModelDescriptorDirName(base_descr_dir, model_name);
 
     if (!boost::filesystem::exists(model_descr_dir))
         boost::filesystem::create_directories(model_descr_dir);
@@ -401,12 +400,9 @@ int main(int argc, char **argv)
 
     cout << "scene_name: " << scene_name << "\n";
 
-    string gt_file = scene_name + ".txt";
+    auto gt_file = scene_name + ".txt";
 
-    stringstream gt_path_ss;
-    gt_path_ss << gt_files_dir << "/" << gt_file;
-
-    gt_file_path = gt_path_ss.str();
+    gt_file_path = PersistenceUtils::getGroundTruthFileName(gt_files_dir, gt_file);
 
     cout << "gt file path: " << gt_file_path << "\n";
 
