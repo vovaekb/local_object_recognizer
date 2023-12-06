@@ -1,6 +1,6 @@
 #pragma once
 
-#include <list>
+#include <vector>
 #include <Eigen/Core>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -34,6 +34,7 @@ using RFCloudPtr = RFCloud::Ptr;
 using SHOTDescriptorKdTree = pcl::KdTreeFLANN<SHOTDescriptorType>;
 
 using FeatureCloudAllocator = Eigen::aligned_allocator<FeatureCloud>;
-using FeatureCloudList = std::list<FeatureCloud, FeatureCloudAllocator>;
+using FeatureCloudVector = std::vector<FeatureCloud, FeatureCloudAllocator>;
 
-using CorrespondencesPtrList = std::list<pcl::CorrespondencesPtr>;
+using CorrespondencesPtrVector = std::vector<pcl::CorrespondencesPtr>;
+using CorrespondenceRejectorSampleConsensusType = pcl::registration::CorrespondenceRejectorSampleConsensus<PointType>;

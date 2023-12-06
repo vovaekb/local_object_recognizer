@@ -24,11 +24,11 @@ int main(int argc, char **argv)
 
     size_t pos = ply_file.find_last_of(".");
 
-    string model_name = ply_file.substr(0, pos);
+    auto model_name = ply_file.substr(0, pos);
 
     std::cout << "model name: " << model_name << "\n";
 
-    string samples_dir = model_name;
+    auto samples_dir = model_name;
     boost::filesystem::create_directory(samples_dir);
 
     // Load the PLY model from a file.
@@ -74,8 +74,8 @@ int main(int argc, char **argv)
     render_views.getPoses(poses);
     render_views.getEntropies(entropies);
 
-    size_t j = 0;
-    for (auto &&pose : poses)
+    auto j = 0;
+    for (auto const &pose : poses)
     {
         cout << "Instance " << (j + 1) << ":\n";
 
@@ -94,16 +94,16 @@ int main(int argc, char **argv)
         j++;
     }
 
-    for (auto &&view : views)
+    for (auto const &view : views)
     {
         cout << "Cloud " << i << " has " << view->points.size() << " points\n";
-        stringstream ss_cloud;
-        ss_cloud << samples_dir << "/" << i << ".pcd";
-        cout << ss_cloud.str() << "\n";
+        auto view_pcd_file = PersistenceUtils::getModelViewPcdFileName(samples_dir, i);
+
+        cout << view_pcd_file << "\n";
         PointCloudNoColorPtr cloud_sample(new PointCloudNoColor());
         *cloud_sample = *view;
         pcl::io::savePCDFileASCII(ss_cloud.str(), *cloud_sample);
 
-        cout << ss_cloud.str() << " was saved\n";
+        cout << view_pcd_file << " was saved\n";
     }
 }

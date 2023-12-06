@@ -55,6 +55,7 @@ public:
 
     using ObjectHypothesisAllocator = Eigen::aligned_allocator<ObjectHypothesis>;
 
+
     Recognizer();
 
     ~Recognizer();
@@ -71,7 +72,7 @@ public:
 
     void setHVInlierThresh(const float &hv_thresh);
 
-    std::list<ObjectHypothesis, ObjectHypothesisAllocator> getModels();
+    std::vector<ObjectHypothesis, ObjectHypothesisAllocator> getModels();
 
     vector<string> getTrainingModelNames();
 
@@ -102,13 +103,13 @@ public:
     void recognize();
 
 private:
-    FeatureCloudList object_templates;
+    FeatureCloudVector object_templates;
     std::vector<string> model_names_;
     FeatureCloud target_;
-    CorrespondencesPtrList template_scene_correspondences_;
+    CorrespondencesPtrVector template_scene_correspondences_;
 
     // TODO: create a set of models - object instances
-    std::list<ObjectHypothesis, ObjectHypothesisAllocator> object_hypotheses_;
+    std::vector<ObjectHypothesis, ObjectHypothesisAllocator> object_hypotheses_;
 
     pcl::KdTreeFLANN<SHOTDescriptorType> descr_matching;
     pcl::GeometricConsistencyGrouping<PointType, PointType> gc_clusterer;

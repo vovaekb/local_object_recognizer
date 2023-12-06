@@ -1,6 +1,7 @@
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 
 #include <list>
+#include <vector>
 #include <thread>
 #include <mutex>
 #include <ros/ros.h>
@@ -37,6 +38,8 @@
 #include "local_object_recognizer/feature_cloud.h"
 #include "local_object_recognizer/persistence_utils.h"
 #include "local_object_recognizer/recognizer.h"
+
+std::mutex insert_mutex;
 
 Recognizer::Recognizer() : cg_size_(cg_size),
                            cg_thresh_(cg_threshold),
@@ -93,12 +96,12 @@ void Recognizer::setHVInlierThresh(const float &hv_thresh)
     hv_inlier_th_ = hv_thresh;
 }
 
-std::list<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis>> Recognizer::getModels()
+std::vector<Recognizer::ObjectHypothesis, Eigen::aligned_allocator<Recognizer::ObjectHypothesis>> Recognizer::getModels() const
 {
     return object_hypotheses_;
 }
 
-vector<string> Recognizer::getTrainingModelNames()
+vector<string> Recognizer::getTrainingModelNames() const
 {
     return model_names_;
 }
@@ -138,7 +141,7 @@ void Recognizer::matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorK
         // Ignore NaNs.
         if (pcl_isfinite(target_.getLocalFeatures()->at(j).descriptor[0]))
         {
-            int k = 1; // number of neighbors
+            auto k = 1; // number of neighbors
             neighbors.resize(k);
             squared_distances.resize(k);
             // Find the nearest neighbor (in descriptor space) ...
@@ -167,10 +170,10 @@ void Recognizer::match()
 
     template_scene_correspondences_.clear();
 
-    int threads_num = 4;
+    auto threads_num = 4;
     std::vector<std::thread> threads;
-    int object_templates_chunk_size = object_templates.size() / threads_num;
-    int object_templates_number = object_templates.size();
+    auto object_templates_chunk_size = object_templates.size() / threads_num;
+    auto object_templates_number = object_templates.size();
 
     for (int i = 0; i < threads_num; i++)
     {
@@ -270,18 +273,20 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
     std::list<bool> good_indices_for_hypotheses(corresp_clusters.size(), true);
 
     // sort the hypotheses for each model according to their correspondences and take those that are threshold_accept_model_hypothesis_ over the max cardinality
-    int max_cardinality = -1;
+    auto max_cardinality = -1;
     for (size_t i = 0; i < corresp_clusters.size(); i++)
     {
-        if (max_cardinality < static_cast<int>(corresp_clusters[i].size()))
+        auto corresp_cluster_size = static_cast<int>(corresp_clusters[i].size());
+        if (max_cardinality < corresp_cluster_size)
         {
-            max_cardinality = static_cast<int>(corresp_clusters[i].size());
+            max_cardinality = corresp_cluster_size;
         }
     }
 
     for (size_t i = 0; i < corresp_clusters.size(); i++)
     {
-        if (static_cast<float>(corresp_clusters[i].size()) < (threshold_accept_model_hypothesis_ * static_cast<float>(max_cardinality)))
+        auto corresp_cluster_size = static_cast<float>(corresp_clusters[i].size());
+        if (corresp_cluster_size < (threshold_accept_model_hypothesis_ * static_cast<float>(max_cardinality)))
         {
             good_indices_for_hypotheses[i] = false;
         }
@@ -302,13 +307,12 @@ void Recognizer::group_template_correspondences(FeatureCloud &model_template, co
 
     cout << "Clusters survived after the cardinality rejection: " << transformations.size() << "\n\n\n";
 
-    for (auto &&transformation : transformations)
+    for (auto const &transformation : transformations)
     {
         ObjectHypothesis oh;
         oh.model_template = model_template;
         oh.transformation = transformation;
 
-        std::mutex insert_mutex;
         std::lock_guard<std::mutex> lk{insert_mutex};
         object_hypotheses_.emplace(object_hypotheses_.end(), oh);
     }
@@ -323,7 +327,7 @@ void Recognizer::group_correspondences()
     int object_templates_chunk_size = object_templates.size() / threads_num;
     int object_templates_number = object_templates.size();
 
-    for (int i = 0; i < threads_num; i++)
+    for (auto i = 0; i < threads_num; i++)
     {
         threads.emplace_back([&]() {
             int start = i * object_templates_chunk_size;
@@ -357,7 +361,7 @@ void Recognizer::alignAll()
 
     cout << "Number of hypotheses: " << object_hypotheses_.size() << "\n";
 
-    for (auto &&oh : object_hypotheses_)
+    for (auto const &oh : object_hypotheses_)
     {
         cout << "Alignment of the object hypotheses " << i << " - " << oh.model_template.getModelId() << "_" << oh.model_template.getViewId() << "\n";
 
@@ -370,7 +374,7 @@ void Recognizer::alignAll()
         // RANSAC
         if (perform_ransac)
         {
-            pcl::registration::CorrespondenceRejectorSampleConsensus<PointType>::Ptr rej(new pcl::registration::CorrespondenceRejectorSampleConsensus<PointType>());
+            CorrespondenceRejectorSampleConsensusType::Ptr rej(new CorrespondenceRejectorSampleConsensusType());
             rej->setInputTarget(target_.getPointCloud());
             rej->setMaximumIterations(sac_max_iters);
             rej->setInlierThreshold(sac_inlier_thresh);
@@ -422,7 +426,7 @@ void Recognizer::recognize()
 
     vector<PointCloudConstPtr> aligned_templates;
 
-    for (auto &&oh : object_hypotheses_)
+    for (auto const &oh : object_hypotheses_)
     {
         PointCloudConstPtr template_cloud = oh.model_template.getPointCloud();
         PointCloudPtr template_aligned(new PointCloud);
@@ -447,18 +451,11 @@ void Recognizer::recognize()
 
     vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> templates_temp;
 
-    for (int i = 0; i < hypotheses_mask.size(); i++)
+    for (auto i = 0; i < hypotheses_mask.size(); i++)
     {
-        //        cout << "Hypothesis " << i;
         if (hypotheses_mask[i])
         {
-            //            cout << " is GOOD! \n";
-
             templates_temp.emplace(templates_temp.end(), object_hypotheses_[i]);
-        }
-        else
-        {
-            //            cout << " is bad!\n";
         }
     }
 
@@ -474,10 +471,8 @@ void Recognizer::recognize()
     // For every model find the best hypothesis
     object_hypotheses_.clear();
 
-    for (int i = 0; i < model_names_.size(); i++)
+    for (auto const & model_name : model_names_)
     {
-        string model_name = model_names_[i];
-
         cout << "Search for the best hypothesis for the model: " << model_name << "\n";
 
         for (int j = 0; j < templates_temp.size(); j++)

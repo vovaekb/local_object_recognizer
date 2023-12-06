@@ -71,7 +71,7 @@ void process()
     if (!boost::filesystem::exists(output_pcd_dir))
         boost::filesystem::create_directory(output_pcd_dir);
 
-    int threads_num = 4;
+    auto threads_num = 4;
     std::vector<thread> threads;
     int clouds_chunk_size = clouds_number / threads_num;
 
