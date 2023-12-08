@@ -68,8 +68,8 @@ void process_cloud(PointCloudPtr &cloud, int index)
 
 void process()
 {
-    if (!boost::filesystem::exists(output_pcd_dir))
-        boost::filesystem::create_directory(output_pcd_dir);
+    if (!fs::exists(output_pcd_dir))
+        fs::create_directory(output_pcd_dir);
 
     auto threads_num = 4;
     std::vector<thread> threads;
@@ -78,14 +78,15 @@ void process()
     // Load and process point clouds
     for (int i = 1; i <= threads_num; i++)
     {
-        threads.emplace_back([&] () {
+        threads.emplace_back([&]()
+                             {
             int start = i * clouds_chunk_size;
             int end = (i == threads_num - 1) ? clouds_number : (i + 1) * clouds_chunk_size;
             for (int j = start; j < end; j++)
             {
                 string pcd_path = samples_path + "/" + boost::to_string(j) + ".pcd";
 
-                if (boost::filesystem::exists(pcd_path))
+                if (fs::exists(pcd_path))
                 {
                     PointCloudPtr cloud(new PointCloud());
                     if (pcl::io::loadPCDFile(pcd_path, *cloud) != 0)
@@ -96,8 +97,7 @@ void process()
                     cout << "Point cloud " << boost::to_string(j) << ".pcd has " << cloud->points.size() << " points\n";
                     process_cloud(cloud, j);
                 }
-            }
-        });
+            } });
     }
 
     for (auto &&t : threads)
@@ -106,10 +106,8 @@ void process()
         {
             t.join();
         }
-
     }
     threads.clear();
-
 }
 
 void showHelp()

@@ -29,7 +29,7 @@ int main(int argc, char **argv)
     std::cout << "model name: " << model_name << "\n";
 
     auto samples_dir = model_name;
-    boost::filesystem::create_directory(samples_dir);
+    fs::create_directory(samples_dir);
 
     // Load the PLY model from a file.
     vtkSmartPointer<vtkPLYReader> reader = vtkSmartPointer<vtkPLYReader>::New();
@@ -65,12 +65,12 @@ int main(int argc, char **argv)
     render_views.generateViews();
 
     // Object for storing the rendered views.
-    std::vector<PointCloudNoColorPtr> views;
+    std::shared_ptr<std::vector<PointCloudNoColorPtr>> views;
     // Object for storing the poses, as 4x4 transformation matrices.
     std::vector<Eigen::Matrix4f, Eigen::aligned_allocator<Eigen::Matrix4f>> poses;
     // Object for storing the entropies (optional).
     std::vector<float> entropies;
-    render_views.getViews(views);
+    render_views.getViews(*views);
     render_views.getPoses(poses);
     render_views.getEntropies(entropies);
 

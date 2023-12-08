@@ -30,6 +30,7 @@ ros::Publisher recogn_pub;
 ros::Publisher model_pub;
 
 using namespace std;
+namespace fs = boost::filesystem;
 
 auto perform_verification{true};
 auto use_hough(true);
@@ -100,7 +101,7 @@ void runRecognizer()
 
         cout << "Calculate pose estimation error\n";
 
-        if (!boost::filesystem::exists(gt_file_path))
+        if (!fs::exists(gt_file_path))
         {
             ROS_ERROR("Ground truth file %s doesn't exist", gt_file_path.c_str());
             exit(-1);
@@ -202,7 +203,7 @@ void runRecognizer()
         auto fn_n = 0;
 
         auto model_names = recognizer.getTrainingModelNames();
-        for (auto const& model_name : model_names)
+        for (auto const &model_name : model_names)
         {
             auto is_present = PersistenceUtils::modelPresents(gt_file_path, model_name);
             auto is_found = false;
@@ -253,13 +254,13 @@ void runRecognizer()
         if (visualize)
         {
             cout << "------------ Visualization ---------------\n";
-            pcl::visualization::PCLVisualizer viewer("Local recognition pipeline");
+            std::shared_ptr<pcl::visualization::PCLVisualizer> viewer("Local recognition pipeline");
 
             int v1(0);
             pcl::visualization::PointCloudColorHandlerRGBField<PointType> scene_color_handler(scene_cloud);
-            viewer.addPointCloud(scene_cloud, scene_color_handler, "scene_cloud");
-            viewer.setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "scene_cloud");
-            viewer.addCoordinateSystem(1.0);
+            viewer->addPointCloud(scene_cloud.makeShared(), scene_color_handler, "scene_cloud");
+            viewer->setPointCloudRenderingProperties(pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "scene_cloud");
+            viewer->addCoordinateSystem(1.0);
 
             for (auto const &model : models)
             {
@@ -273,18 +274,18 @@ void runRecognizer()
                 ss_cloud << "model " << model.model_template.getModelId();
 
                 pcl::visualization::PointCloudColorHandlerCustom<PointType> aligned_model_color_handler(aligned_model, 255, 0, 0);
-                viewer.addPointCloud(aligned_model, aligned_model_color_handler, ss_cloud.str());
+                viewer->addPointCloud(aligned_model, aligned_model_color_handler, ss_cloud.str());
             }
 
-            while (!viewer.wasStopped())
+            while (!viewer->wasStopped())
             {
-                viewer.spinOnce();
+                viewer->spinOnce();
             }
         }
     }
 }
 
-void getModelsFromDir(boost::filesystem::path &dir)
+void getModelsFromDir(fs::path &dir)
 {
     //    cout << "[getModelsFromDir]\n";
     //    cout << "Reading dir: " << dir.string() << "\n";
@@ -296,12 +297,12 @@ void getModelsFromDir(boost::filesystem::path &dir)
         recognizer.addModelId(model_id);
     }
 
-    boost::filesystem::directory_iterator end_itr;
-    for (boost::filesystem::directory_iterator iter(dir); iter != end_itr; ++iter)
+    fs::directory_iterator end_itr;
+    for (fs::directory_iterator iter(dir); iter != end_itr; ++iter)
     {
-        if (boost::filesystem::is_directory(*iter))
+        if (fs::is_directory(*iter))
         {
-            boost::filesystem::path curr_path = iter->path();
+            fs::path curr_path = iter->path();
 
             getModelsFromDir(curr_path);
         }
@@ -318,7 +319,7 @@ void getModelsFromDir(boost::filesystem::path &dir)
             boost::split(strs, file, boost::is_any_of("."));
             int view_id = atoi(strs[0].c_str());
 
-            if (boost::filesystem::extension(iter->path()) == ".pcd" && file.substr(0, 5) != "descr" && view_id < end_template_index)
+            if (fs::extension(iter->path()) == ".pcd" && file.substr(0, 5) != "descr" && view_id < end_template_index)
             {
                 cout << "Loading model view " << file << "\n";
 
@@ -331,12 +332,12 @@ void getModelsFromDir(boost::filesystem::path &dir)
 
                 PersistenceUtils::readMatrixFromFile(pose_file, pose);
 
-                FeatureCloud view_cloud;
-                view_cloud.setViewId(view_id);
-                view_cloud.setModelId(model_id);
-                view_cloud.setPose(std::move(pose));
-                view_cloud.loadInputCloud(pcd_path.c_str(), "model");
-                recognizer.addTemplateCloud(view_cloud);
+                std::shared_ptr<FeatureCloud> view_cloud;
+                view_cloud->setViewId(view_id);
+                view_cloud->setModelId(model_id);
+                view_cloud->setPose(std::move(pose));
+                view_cloud->loadInputCloud(pcd_path.c_str(), "model");
+                recognizer.addTemplateCloud(*view_cloud);
             }
         }
     }
@@ -347,18 +348,18 @@ void recognize()
     cout << "*** Run recognition ***\n";
 
     // Check existence of basic directory for descriptors
-    if (!boost::filesystem::exists(base_descr_dir))
-        boost::filesystem::create_directory(base_descr_dir);
+    if (!fs::exists(base_descr_dir))
+        fs::create_directory(base_descr_dir);
 
     std::stringstream ss;
     ss << base_descr_dir << "/" << model_name;
     model_descr_dir = PersistenceUtils::getModelDescriptorDirName(base_descr_dir, model_name);
 
-    if (!boost::filesystem::exists(model_descr_dir))
-        boost::filesystem::create_directories(model_descr_dir);
+    if (!fs::exists(model_descr_dir))
+        fs::create_directories(model_descr_dir);
 
     cout << "Load models\n";
-    boost::filesystem::path models_path = models_dir;
+    fs::path models_path = models_dir;
 
     getModelsFromDir(models_path);
 

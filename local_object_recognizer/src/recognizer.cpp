@@ -56,8 +56,8 @@ Recognizer::Recognizer() : cg_size_(cg_size),
 {
     gc_clusterer.setGCSize(cg_size_);
     gc_clusterer.setGCThreshold(cg_thresh_);
-    icp.setMaxCorrespondenceDistance(icp_corr_distance_);
-    icp.setMaximumIterations(icp_max_iter_);
+    icp->setMaxCorrespondenceDistance(icp_corr_distance_);
+    icp->setMaximumIterations(icp_max_iter_);
 }
 
 Recognizer::~Recognizer() {}
@@ -71,7 +71,7 @@ void Recognizer::setTargetCloud(FeatureCloud &target_cloud)
 {
     target_ = target_cloud;
     gc_clusterer.setSceneCloud(target_cloud.getKeypoints());
-    icp.setInputTarget(target_cloud.getPointCloud());
+    icp->setInputTarget(target_cloud.getPointCloud());
 }
 
 void Recognizer::setRFRadius(const float &rf_radius)
@@ -126,7 +126,7 @@ void Recognizer::printModels()
     }
 }
 
-void Recognizer::matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorKdTree& shot_matching)
+void Recognizer::matchObjectTemplate(FeatureCloud &obj_template, SHOTDescriptorKdTree &shot_matching)
 {
     shot_matching.setInputCloud(obj_template.getLocalFeatures());
     // A Correspondence object stores the indices of the query and the match,
@@ -136,21 +136,21 @@ void Recognizer::matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorK
     // Check every descriptor computed for the scene
     for (size_t j = 0; j < target_.getLocalFeatures()->size(); ++j)
     {
-        vector<int> neighbors(1);
+        std::shared_ptr<vector<int>> neighbors(new vector<int>(1));
         vector<float> squared_distances(1);
         // Ignore NaNs.
         if (pcl_isfinite(target_.getLocalFeatures()->at(j).descriptor[0]))
         {
             auto k = 1; // number of neighbors
-            neighbors.resize(k);
+            neighbors->resize(k);
             squared_distances.resize(k);
             // Find the nearest neighbor (in descriptor space) ...
-            int neighbor_count = shot_matching.nearestKSearch(target_.getLocalFeatures()->at(j), k, neighbors, squared_distances);
+            int neighbor_count = shot_matching.nearestKSearch(target_.getLocalFeatures()->at(j), k, *neighbors, squared_distances);
             // ...and add a new correspondence if the distance is less than a threshold
             // (SHOT distances are between 0 and 1).
             if (neighbor_count == 1 && squared_distances[0] < 0.25f)
             {
-                pcl::Correspondence correspondence(neighbors[0], static_cast<int>(j), squared_distances[0]);
+                pcl::Correspondence correspondence((*neighbors)[0], static_cast<int>(j), squared_distances[0]);
                 correspondences->push_back(correspondence);
             }
         }
@@ -160,9 +160,8 @@ void Recognizer::matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorK
 
     std::mutex insert_mutex;
     std::lock_guard<std::mutex> lk{insert_mutex};
-    template_scene_correspondences_ .push_back(correspondences);
+    template_scene_correspondences_.push_back(correspondences);
 }
-
 
 void Recognizer::match()
 {
@@ -177,7 +176,8 @@ void Recognizer::match()
 
     for (int i = 0; i < threads_num; i++)
     {
-        threads.emplace_back([&]() {
+        threads.emplace_back([&]()
+                             {
             int start = i * object_templates_chunk_size;
             int end = (i == threads_num - 1) ? object_templates_number : (i + 1) * object_templates_chunk_size;
             for (int j = start; j < end; j++)
@@ -187,8 +187,7 @@ void Recognizer::match()
                 SHOTDescriptorKdTree shot_matching;
                 auto obj_template = object_templates[j];
                 matchObjectTemplate(&obj_template, &shot_matching);
-            }
-        });
+            } });
     }
 
     for (auto &&t : threads)
@@ -197,10 +196,8 @@ void Recognizer::match()
         {
             t.join();
         }
-
     }
     threads.clear();
-
 }
 
 void Recognizer::group_template_correspondences(FeatureCloud &model_template, const int index)
@@ -329,7 +326,8 @@ void Recognizer::group_correspondences()
 
     for (auto i = 0; i < threads_num; i++)
     {
-        threads.emplace_back([&]() {
+        threads.emplace_back([&]()
+                             {
             int start = i * object_templates_chunk_size;
             int end = (i == threads_num - 1) ? object_templates_number : (i + 1) * object_templates_chunk_size;
             for (int j = start; j < end; j++)
@@ -339,8 +337,7 @@ void Recognizer::group_correspondences()
                 auto obj_template = object_templates[j];
                 group_template_correspondences(&obj_template, j);
 
-            }
-        });
+            } });
     }
 
     for (auto &&t : threads)
@@ -349,10 +346,8 @@ void Recognizer::group_correspondences()
         {
             t.join();
         }
-
     }
     threads.clear();
-
 }
 
 void Recognizer::alignAll()
@@ -380,19 +375,19 @@ void Recognizer::alignAll()
             rej->setInlierThreshold(sac_inlier_thresh);
             rej->setInputSource(template_aligned);
 
-            icp.addCorrespondenceRejector(rej);
+            icp->addCorrespondenceRejector(rej);
         }
 
-        icp.setMaximumIterations(icp_max_iter_);
-        icp.setInputTarget(target_.getPointCloud());
-        icp.setInputSource(template_aligned);
+        icp->setMaximumIterations(icp_max_iter_);
+        icp->setInputTarget(target_.getPointCloud());
+        icp->setInputSource(template_aligned);
         PointCloudPtr registered(new PointCloud());
-        icp.align(*registered);
+        icp->align(*registered);
 
-        Eigen::Matrix4f icp_trans = icp.getFinalTransformation();
+        Eigen::Matrix4f icp_trans = icp->getFinalTransformation();
         oh.transformation = icp_trans * oh.transformation;
 
-        float score = icp.getFitnessScore();
+        float score = icp->getFitnessScore();
 
         oh.icp_score = score;
 
@@ -471,7 +466,7 @@ void Recognizer::recognize()
     // For every model find the best hypothesis
     object_hypotheses_.clear();
 
-    for (auto const & model_name : model_names_)
+    for (auto const &model_name : model_names_)
     {
         cout << "Search for the best hypothesis for the model: " << model_name << "\n";
 

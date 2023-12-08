@@ -55,7 +55,6 @@ public:
 
     using ObjectHypothesisAllocator = Eigen::aligned_allocator<ObjectHypothesis>;
 
-
     Recognizer();
 
     ~Recognizer();
@@ -82,7 +81,7 @@ public:
 
     void printModels();
 
-    void matchObjectTemplate(FeatureCloud& obj_template, SHOTDescriptorKdTree shot_matching);
+    void matchObjectTemplate(FeatureCloud &obj_template, SHOTDescriptorKdTree shot_matching);
 
     // Matching
     void match();
@@ -113,7 +112,7 @@ private:
 
     pcl::KdTreeFLANN<SHOTDescriptorType> descr_matching;
     pcl::GeometricConsistencyGrouping<PointType, PointType> gc_clusterer;
-    pcl::IterativeClosestPoint<PointType, PointType> icp;
+    pcl::IterativeClosestPoint<PointType, PointType>::Ptr icp;
     string training_dir_;
     float cg_size_;
     float cg_thresh_;
