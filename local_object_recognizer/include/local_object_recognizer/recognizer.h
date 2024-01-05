@@ -47,13 +47,14 @@ public:
     // A struct for storing alignment results
     struct ObjectHypothesis
     {
-        ObjectHypothesis(ObjectHypothesis&& o)
+        ObjectHypothesis(ObjectHypothesis &&o)
         {
             copyPointCloud(*(o.model_template), *model_template);
-            // TODO: copy transformation
+            transformation = std::move(o.transformation);
             icp_score = f.icp_score;
-        
+
             o.model_template.reset(new PointCloud);
+            o.transformation.resize(0, 0);
             o.icp_score = 0;
         }
         FeatureCloud model_template;

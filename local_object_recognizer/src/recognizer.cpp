@@ -384,7 +384,7 @@ void Recognizer::alignAll()
         PointCloudPtr registered(new PointCloud());
         icp->align(*registered);
 
-        Eigen::Matrix4f icp_trans = icp->getFinalTransformation();
+        Eigen::Matrix4f icp_trans = std::move(icp->getFinalTransformation());
         oh.transformation = icp_trans * oh.transformation;
 
         float score = icp->getFitnessScore();
@@ -472,7 +472,7 @@ void Recognizer::recognize()
 
         for (int j = 0; j < templates_temp.size(); j++)
         {
-            ObjectHypothesis oh = templates_temp[j];
+            ObjectHypothesis oh = std::move(templates_temp[j]);
 
             if (oh.model_template.getModelId() == model_name)
             {

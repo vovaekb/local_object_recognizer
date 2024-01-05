@@ -84,8 +84,8 @@ int main(int argc, char **argv)
 
         PersistenceUtils::writeMatrixToFile(pose_ss.str(), pose);
 
-        Eigen::Matrix3f rotation = pose.block<3, 3>(0, 0);
-        Eigen::Vector3f translation = pose.block<3, 1>(0, 3);
+        Eigen::Matrix3f rotation = std::move(pose.block<3, 3>(0, 0));
+        Eigen::Vector3f translation = std::move(pose.block<3, 1>(0, 3));
         printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(0, 0), rotation(0, 1), rotation(0, 2));
         printf("\t\tR = | %6.3f %6.3f %6.3f | \n", rotation(1, 0), rotation(1, 1), rotation(1, 2));
         printf("\t\t    | %6.3f %6.3f %6.3f | \n", rotation(2, 0), rotation(2, 1), rotation(2, 2));

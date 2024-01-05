@@ -126,11 +126,11 @@ void runRecognizer()
 
                 Eigen::Matrix4f model_pose = hom_matrix_pose.inverse() * view_pose;
 
-                Eigen::Vector3f model_trans = model_pose.block<3, 1>(0, 3);
-                Eigen::Matrix3f model_rot = model_pose.block<3, 3>(0, 0);
+                Eigen::Vector3f model_trans = std::move(model_pose.block<3, 1>(0, 3));
+                Eigen::Matrix3f model_rot = std::move(model_pose.block<3, 3>(0, 0));
 
-                Eigen::Vector3f gt_trans = gt_pose.block<3, 1>(0, 3);
-                Eigen::Matrix3f gt_rot = gt_pose.block<3, 3>(0, 0);
+                Eigen::Vector3f gt_trans = std::move(gt_pose.block<3, 1>(0, 3));
+                Eigen::Matrix3f gt_rot = std::move(gt_pose.block<3, 3>(0, 0));
 
                 // norm-2: sqrt(x1^2 + x2^2 + x3^2)
                 Eigen::Vector3f gt_est_trans_diff = gt_trans - model_trans;
@@ -144,9 +144,9 @@ void runRecognizer()
                 // Rotation error
                 //
                 // Rotation for X axis
-                Eigen::Vector3f model_rot_x = model_rot.block<3, 1>(0, 0);
+                Eigen::Vector3f model_rot_x = std::move(model_rot.block<3, 1>(0, 0));
 
-                Eigen::Vector3f gt_rot_x = gt_rot.block<3, 1>(0, 0);
+                Eigen::Vector3f gt_rot_x = std::move(gt_rot.block<3, 1>(0, 0));
 
                 double rot_x_error = acos(static_cast<double>(gt_rot_x.dot(model_rot_x)));
 
@@ -157,9 +157,9 @@ void runRecognizer()
                 printf("Rotation X error angle: %0.8f\n", rot_x_error_angle);
 
                 // Rotation for Y axis
-                Eigen::Vector3f model_rot_y = model_rot.block<3, 1>(0, 1);
+                Eigen::Vector3f model_rot_y = std::move(model_rot.block<3, 1>(0, 1));
 
-                Eigen::Vector3f gt_rot_y = gt_rot.block<3, 1>(0, 1);
+                Eigen::Vector3f gt_rot_y = std::move(gt_rot.block<3, 1>(0, 1));
 
                 double rot_y_error = acos(static_cast<double>(gt_rot_y.dot(model_rot_y)));
 
@@ -170,9 +170,9 @@ void runRecognizer()
                 printf("Rotation Y error angle: %0.6f\n", rot_y_error_angle);
 
                 // Rotation for Z axis
-                Eigen::Vector3f model_rot_z = model_rot.block<3, 1>(0, 2);
+                Eigen::Vector3f model_rot_z = std::move(model_rot.block<3, 1>(0, 2));
 
-                Eigen::Vector3f gt_rot_z = gt_rot.block<3, 1>(0, 2);
+                Eigen::Vector3f gt_rot_z = std::move(gt_rot.block<3, 1>(0, 2));
 
                 double rot_z_error = acos(static_cast<double>(gt_rot_z.dot(model_rot_z)));
 
@@ -265,7 +265,7 @@ void runRecognizer()
             for (auto const &model : models)
             {
                 PointCloudPtr model_cloud = model.model_template.getPointCloud();
-                Eigen::Matrix4f transform = model.transformation; // 6DoF pose
+                Eigen::Matrix4f transform = std::move(model.transformation); // 6DoF pose
 
                 PointCloudPtr aligned_model(new PointCloud);
                 pcl::transformPointCloud(*model_cloud, *aligned_model, transform);
