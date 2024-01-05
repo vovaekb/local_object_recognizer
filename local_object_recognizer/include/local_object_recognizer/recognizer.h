@@ -47,6 +47,15 @@ public:
     // A struct for storing alignment results
     struct ObjectHypothesis
     {
+        ObjectHypothesis(ObjectHypothesis&& o)
+        {
+            copyPointCloud(*(o.model_template), *model_template);
+            // TODO: copy transformation
+            icp_score = f.icp_score;
+        
+            o.model_template.reset(new PointCloud);
+            o.icp_score = 0;
+        }
         FeatureCloud model_template;
         float icp_score;
         Eigen::Matrix4f transformation;
