@@ -430,19 +430,19 @@ void Recognizer::recognize()
         aligned_templates.emplace(aligned_templates.end(), template_aligned);
     }
 
-    pcl::GlobalHypothesesVerification<PointType, PointType> hyp_ver;
+    std::unique_ptr<pcl::GlobalHypothesesVerification<PointType, PointType>> hyp_ver;
 
-    hyp_ver.setSceneCloud(target_.getPointCloud());
-    hyp_ver.addModels(aligned_templates, true);
+    hyp_ver->setSceneCloud(target_.getPointCloud());
+    hyp_ver->addModels(aligned_templates, true);
 
-    hyp_ver.setInlierThreshold(hv_inlier_th_);
-    hyp_ver.setRegularizer(hv_regularizer_);
-    hyp_ver.setRadiusClutter(hv_rad_clutter_);
-    hyp_ver.setClutterRegularizer(hv_clutter_reg_);
-    hyp_ver.setDetectClutter(hv_detect_clutter_);
+    hyp_ver->setInlierThreshold(hv_inlier_th_);
+    hyp_ver->setRegularizer(hv_regularizer_);
+    hyp_ver->setRadiusClutter(hv_rad_clutter_);
+    hyp_ver->setClutterRegularizer(hv_clutter_reg_);
+    hyp_ver->setDetectClutter(hv_detect_clutter_);
 
-    hyp_ver.verify();
-    hyp_ver.getMask(hypotheses_mask);
+    hyp_ver->verify();
+    hyp_ver->getMask(hypotheses_mask);
 
     vector<ObjectHypothesis, Eigen::aligned_allocator<ObjectHypothesis>> templates_temp;
 
